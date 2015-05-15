@@ -1,7 +1,9 @@
 #include "thread.h"
+#include <math.h>
 
+#define DEG_TO_RAD M_PI / 180.
+#define RAD_TO_DEG 180. / M_PI
 
- 
 
 
 CtrlThread::CtrlThread(const double period) : RateThread(int(period*1000.0))
@@ -13,10 +15,17 @@ CtrlThread::CtrlThread(const double period) : RateThread(int(period*1000.0))
 
 bool CtrlThread::threadInit()
 {
-    robotName = "icubSim";
+    robotName = "icubGazeboSim";
     extension = ".txt";
     baseFilePath = "/home/ryan/Desktop/";
     // createPidLog();
+
+    isPositionMode  = true;
+    isVelocityMode  = false;
+    isTorqueMode    = false;
+
+    partIndex = 0;
+    jointIndex = 0;
 
     robotParts.push_back("head");
     robotParts.push_back("torso");
@@ -26,24 +35,31 @@ bool CtrlThread::threadInit()
     robotParts.push_back("right_leg");
 
     numRobotParts = robotParts.size();
-
+    nJoints.resize(numRobotParts);
     // robotDevice.resize(numRobotParts);
     iEnc.resize(numRobotParts);
     iPos.resize(numRobotParts);
     iVel.resize(numRobotParts);
     iTrq.resize(numRobotParts);
+    iLims.resize(numRobotParts);
 
 
     encoders.resize(numRobotParts);
     command.resize(numRobotParts);
     tmp.resize(numRobotParts);
     homeVectors.resize(numRobotParts);
+    jointLimitsLower.resize(numRobotParts);
+    jointLimitsUpper.resize(numRobotParts);
 
     openInterfaces();
 
-       
-    
+    for (int i=0; i<numRobotParts; i++)
+    {
+        std::cout << homeVectors[i].toString().c_str() << std::endl;
+    }
 
+    reverseDirectrion = false;
+    reversalCounter = 0;
     return true;
 
 }
@@ -62,27 +78,57 @@ void CtrlThread::afterStart(bool s)
 
 void CtrlThread::run()
 {
-    
-    
-    std::cout<< "TTTest\n";
+    double degChange = 1.0;
 
+    if ( (command[partIndex][jointIndex] < jointLimitsUpper[partIndex][jointIndex]) && !reverseDirectrion)
+    {
+        command[partIndex][jointIndex] += degChange;
+    }
+
+    else if( (command[partIndex][jointIndex] > jointLimitsLower[partIndex][jointIndex]) && reverseDirectrion)
+    {
+        command[partIndex][jointIndex] -= degChange;
+    }
+
+    else
+    {
+        reverseDirectrion = !reverseDirectrion;
+        reversalCounter++;
+    }
+
+    if (reversalCounter>=2)
+    {
+        command[partIndex][jointIndex] = homeVectors[partIndex][jointIndex];
+
+        jointIndex++;
+
+        if (jointIndex==nJoints[partIndex])
+        {jointIndex = 0; partIndex++;}
+
+        if(partIndex==numRobotParts)
+        {jointIndex=0; partIndex=0;}
+
+        reversalCounter = 0;
+    }
+
+    sendJointCommands();
     // // Update encoders
     // encs_LeftArm->getEncoders(encoders_LeftArm.data());
     // encs_Head->getEncoders(encoders_Head.data());
     // writeToPidLog();
-        
+
 }
 
 /********************************************************/
 
 void CtrlThread::threadRelease()
-{    
-    
-    
-    std::cout << "\n\n\t<--------------->\n";
+{
+
+
+    std::cout << "\n\n\t<-------------------------->\n";
     while(!goToHome())
     {
-        std::cout << "Going to Home Pose\n";
+        // std::cout << "Going to Home Pose\n";
         Time::delay(0.1);
     }
 
@@ -94,8 +140,8 @@ void CtrlThread::threadRelease()
 }
 
 bool CtrlThread::openInterfaces()
-{   
-    std::cout << "\n\nOpening Interfaces for:\n";
+{
+    std::cout << "\n\nOpening Interfaces:\n";
     for (int rp=0; rp<numRobotParts; rp++)
     {
         std::string curRobPart = robotParts[rp];
@@ -107,11 +153,6 @@ bool CtrlThread::openInterfaces()
         options.put("local", "/"+curRobPart+"/client");   //local port names
         options.put("remote", "/"+robotName+"/"+curRobPart);         //where we connect to
 
-        // create a device
-        
-
-        // if (!robotDevice[rp]->open(options))
-        //     return false;
 
         PolyDriver *tmp_robotDevice = new PolyDriver(options);
         if (!tmp_robotDevice->isValid()) {
@@ -128,23 +169,31 @@ bool CtrlThread::openInterfaces()
         ok = ok && robotDevice[rp]->view(iEnc[rp]);
         ok = ok && robotDevice[rp]->view(iVel[rp]);
         ok = ok && robotDevice[rp]->view(iTrq[rp]);
+        ok = ok && robotDevice[rp]->view(iLims[rp]);
+
+
 
         if (!ok) {
             printf("Problems acquiring interfaces\n");
             return false;
         }
-        std::cout << "test..." << std::endl;
+
 
         nJoints[rp]=0;
         iPos[rp]->getAxes(&nJoints[rp]);
-        
+
+
         encoders[rp].resize(nJoints[rp]);
         tmp[rp].resize(nJoints[rp]);
         command[rp].resize(nJoints[rp]);
-        
-        
+
+        jointLimitsLower[rp].resize(nJoints[rp]);
+        jointLimitsUpper[rp].resize(nJoints[rp]);
+
+
         for (int i = 0; i < nJoints[rp]; i++) {
              tmp[rp][i] = 50.0;
+             iLims[rp]->getLimits(i, &jointLimitsLower[rp][i], &jointLimitsUpper[rp][i]);
         }
         iPos[rp]->setRefAccelerations(tmp[rp].data());
 
@@ -154,7 +203,19 @@ bool CtrlThread::openInterfaces()
         }
 
         homeVectors[rp].resize(nJoints[rp]);
-        iEnc[rp]->getEncoders(homeVectors[rp].data());
+
+        while(!iEnc[rp]->getEncoders(homeVectors[rp].data()) )
+        {
+            Time::delay(0.01);
+        }
+
+        while(!iEnc[rp]->getEncoders(command[rp].data()))
+        {
+            Time::delay(0.01);
+        }
+
+
+
     }
     return true;
 }
@@ -162,12 +223,16 @@ bool CtrlThread::openInterfaces()
 
 bool CtrlThread::goToHome()
 {
+    std::cout<<"\n\tMoving to home position.\n\n\n";
     for (int rp=0; rp<numRobotParts; rp++)
     {
-        currentRobotPart = robotParts[rp];
-        
-        iPos[rp]->positionMove(homeVectors[rp].data());
+        // std::string curRobPart = robotParts[rp];
 
+        iPos[rp]->positionMove(homeVectors[rp].data());
+    }
+
+    for (int rp=0; rp<numRobotParts; rp++)
+    {
         bool moveDone = false;
         while(!moveDone)
         {
@@ -176,10 +241,47 @@ bool CtrlThread::goToHome()
         }
 
     }
+    return true;
+}
+
+bool CtrlThread::sendJointCommands()
+{
+    for (int rp=0; rp<numRobotParts; rp++)
+    {
+        if (isPositionMode)
+        {
+            iPos[rp]->positionMove(command[rp].data());
+        }
+
+        else if (isVelocityMode)
+        {
+            //
+        }
+
+        else if (isTorqueMode)
+        {
+            //
+        }
+
+        else{return false;}
+
+    }
+    return true;
 }
 
 
+void CtrlThread::setCommandToHome()
+{
+    for (int rp=0; rp<numRobotParts; rp++)
+    {
+        for (int jnt = 0; jnt < nJoints[rp]; jnt++)
+        {
+            command[rp][jnt] = homeVectors[rp][jnt];
+        }
+    }
+}
 
+//
 
 void CtrlThread::createPidLog()
 {
@@ -189,9 +291,9 @@ void CtrlThread::createPidLog()
     if (!boost::filesystem::exists(baseFilePath))
         boost::filesystem::create_directories(baseFilePath);
 
-    
+
     pidLogFilePath = baseFilePath + "/jointPidGains"+extension;
-    pidFile.open(pidLogFilePath.c_str()); 
+    pidFile.open(pidLogFilePath.c_str());
     pidFile.close();
 
 
@@ -206,12 +308,12 @@ void CtrlThread::writeToPidLog()
 
 
 
-    pidFile.open(pidLogFilePath.c_str(), std::ios::app); 
+    pidFile.open(pidLogFilePath.c_str(), std::ios::app);
     pidFile << "test" << std::endl;
     pidFile.close();
 
 
-   
+
 }
 
 const std::string CtrlThread::currentDateTime()
@@ -228,8 +330,3 @@ bool CtrlThread::isFinished()
 {
     return false;
 }
-
-
-
-
-

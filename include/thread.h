@@ -40,26 +40,34 @@ class CtrlThread: public RateThread
         std::vector<IPositionControl*>  iPos;
         std::vector<IVelocityControl*>  iVel;
         std::vector<ITorqueControl*>    iTrq;
+        std::vector<IControlLimits*>    iLims;
 
-        
+
 
         std::vector<Vector>     encoders;
         std::vector<Vector>     command;
         std::vector<Vector>     tmp;
         std::vector<Vector>     homeVectors;
+        std::vector<Vector>     jointLimitsLower;
+        std::vector<Vector>     jointLimitsUpper;
 
         std::vector<int> nJoints;
 
         yarp::dev::IControlMode2 *iMode;
 
         std::vector<std::string> robotParts;
-        
+
         std::string currentRobotPart, robotName, baseFilePath, extension, pidLogFilePath;
 
         std::ofstream pidFile;
         int numRobotParts;
-        
 
+        bool isPositionMode, isVelocityMode, isTorqueMode;
+
+        int partIndex, jointIndex;
+
+        bool reverseDirectrion;
+        int reversalCounter;
 
 
     public:
@@ -76,8 +84,10 @@ class CtrlThread: public RateThread
         bool openInterfaces();
 
         bool goToHome();
+        bool sendJointCommands();
+        void setCommandToHome();
 
-           
+
         void createPidLog();
 
         void writeToPidLog();
@@ -87,5 +97,3 @@ class CtrlThread: public RateThread
         bool isFinished();
 
 };
-
-   
