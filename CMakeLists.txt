@@ -1,6 +1,23 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-SET(PROJECTNAME pidTuner)
-PROJECT(${PROJECTNAME})
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
+
+
+set(PROJECTNAME_CONTROLLER pidTunerController)
+set(PROJECTNAME_GUI pidTunerGui)
+project(pidTuner)
+
+
+set(CMAKE_CXX_FLAGS "-fPIC")
+
+
+# Tell CMake to run moc when necessary:
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+# As moc files are generated in the binary dir, tell CMake
+# to always look for includes there:
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+find_package(Qt5Widgets REQUIRED)
+find_package(Qt5PrintSupport REQUIRED)
 
 find_package(YARP)
 find_package(ICUB)
@@ -14,18 +31,28 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${ICUB_LINK_FLAGS}")
 
 LINK_DIRECTORIES(${Boost_LIBRARY_DIRS})
 
-FILE(GLOB folder_source ./src/*.cpp)
-FILE(GLOB folder_header ./include/*.h)
+FILE(GLOB controller_source ./src/controlModule/*.cpp)
+FILE(GLOB controller_header ./include/controlModule/*.h)
 
-SOURCE_GROUP("Source Files" FILES ${folder_source})
-SOURCE_GROUP("Header Files" FILES ${folder_header})
+FILE(GLOB gui_source ./src/guiModule/*.cpp)
+FILE(GLOB gui_header ./include/guiModule/*.h)
 
-include_directories(${PROJECT_SOURCE_DIR}/include
-                    ${ICUB_INCLUDE_DIRS} 
-                    ${YARP_INCLUDE_DIRS} 
-                    ${Boost_INCLUDE_DIR} )
+# SOURCE_GROUP("Source Files" FILES ${controller_source} ${gui_source})
+# SOURCE_GROUP("Header Files" FILES ${controller_header} ${gui_header})
 
 
-add_executable(${PROJECTNAME} ${folder_source} ${folder_header})
 
-target_link_libraries(${PROJECTNAME} ${YARP_LIBRARIES} ${Boost_LIBRARIES} icubmod)
+include_directories(${PROJECT_SOURCE_DIR}/include/controlModule
+                    ${PROJECT_SOURCE_DIR}/include/guiModule
+                    ${ICUB_INCLUDE_DIRS}
+                    ${YARP_INCLUDE_DIRS}
+                    ${Boost_INCLUDE_DIR}
+                    ${Qt5Widgets_INCLUDE_DIRS}
+                    ${Qt5PrintSupport_INCLUDE_DIRS})
+
+
+add_executable(${PROJECTNAME_CONTROLLER} ${controller_source} ${controller_header})
+target_link_libraries(${PROJECTNAME_CONTROLLER} ${YARP_LIBRARIES} ${Boost_LIBRARIES} Qt5::Widgets Qt5::PrintSupport icubmod )
+
+add_executable(${PROJECTNAME_GUI} ${gui_source} ${gui_header})
+target_link_libraries(${PROJECTNAME_GUI} Qt5::Widgets Qt5::PrintSupport)
