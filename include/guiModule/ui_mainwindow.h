@@ -14,6 +14,7 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QButtonGroup>
 #include <QtWidgets/QComboBox>
+#include <QtWidgets/QGridLayout>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QLabel>
@@ -35,48 +36,55 @@ class Ui_MainWindow
 {
 public:
     QWidget *centralWidget;
+    QGridLayout *gridLayout;
     QCustomPlot *posPlot;
-    QWidget *layoutWidget;
-    QVBoxLayout *verticalLayout_6;
-    QHBoxLayout *horizontalLayout_3;
-    QVBoxLayout *verticalLayout_5;
-    QLabel *label_4;
-    QComboBox *partList;
-    QVBoxLayout *verticalLayout_4;
-    QLabel *label_5;
-    QComboBox *jointList;
-    QSpacerItem *verticalSpacer;
-    QHBoxLayout *horizontalLayout_2;
-    QPushButton *previousJointButton;
-    QPushButton *nextJointButton;
-    QWidget *layoutWidget1;
-    QVBoxLayout *verticalLayout_7;
-    QHBoxLayout *horizontalLayout_4;
-    QVBoxLayout *verticalLayout;
-    QLabel *kp_label;
-    QLineEdit *kp_in;
-    QVBoxLayout *verticalLayout_2;
-    QLabel *kd_label;
-    QLineEdit *kd_in;
-    QVBoxLayout *verticalLayout_3;
-    QLabel *ki_label;
-    QLineEdit *ki_in;
-    QPushButton *gainTestButton;
-    QSpacerItem *horizontalSpacer;
-    QPushButton *saveGainsButton;
-    QWidget *layoutWidget2;
-    QVBoxLayout *verticalLayout_8;
-    QLabel *label;
-    QHBoxLayout *horizontalLayout_5;
+    QSpacerItem *verticalSpacer_3;
+    QVBoxLayout *contModeLayout;
+    QLabel *contModeLabel;
+    QHBoxLayout *contModeButtonLayout;
     QPushButton *posContButton;
     QPushButton *velContButton;
     QPushButton *torContButton;
-    QWidget *layoutWidget3;
-    QHBoxLayout *horizontalLayout;
-    QSpacerItem *horizontalSpacer_2;
+    QVBoxLayout *verticalLayout;
+    QHBoxLayout *statusLayout;
+    QLabel *statusLabel;
+    QLabel *statusInfoLabel;
+    QSpacerItem *verticalSpacer;
+    QHBoxLayout *closeHomeLayout;
+    QSpacerItem *closeSpacer;
     QPushButton *closeButton;
     QPushButton *homeButton;
-    QSpacerItem *horizontalSpacer_3;
+    QSpacerItem *homeSpacer;
+    QSpacerItem *verticalSpacer_2;
+    QVBoxLayout *jointSelectorLayout_2;
+    QHBoxLayout *selectorComboBoxLayout;
+    QVBoxLayout *partLayout;
+    QLabel *partLabel;
+    QComboBox *partList;
+    QVBoxLayout *jointLayout;
+    QLabel *jointLabel;
+    QComboBox *jointList;
+    QSpacerItem *jointButtonSpacer;
+    QHBoxLayout *jointSelectorLayout;
+    QPushButton *previousJointButton;
+    QPushButton *nextJointButton;
+    QVBoxLayout *gainsLayout;
+    QHBoxLayout *gainInputLayout;
+    QVBoxLayout *kpLayout;
+    QLabel *kp_label;
+    QLineEdit *kp_in;
+    QVBoxLayout *kdLayout;
+    QLabel *kd_label;
+    QLineEdit *kd_in;
+    QVBoxLayout *kiLayout;
+    QLabel *ki_label;
+    QLineEdit *ki_in;
+    QPushButton *gainTestButton;
+    QSpacerItem *verticalSpacer_6;
+    QPushButton *gainResetButton;
+    QSpacerItem *verticalSpacer_5;
+    QPushButton *saveGainsButton;
+    QSpacerItem *verticalSpacer_4;
     QMenuBar *menuBar;
     QMenu *menuPID_Tuner;
     QToolBar *mainToolBar;
@@ -89,227 +97,289 @@ public:
         MainWindow->resize(1161, 600);
         centralWidget = new QWidget(MainWindow);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
+        gridLayout = new QGridLayout(centralWidget);
+        gridLayout->setSpacing(6);
+        gridLayout->setContentsMargins(11, 11, 11, 11);
+        gridLayout->setObjectName(QStringLiteral("gridLayout"));
         posPlot = new QCustomPlot(centralWidget);
         posPlot->setObjectName(QStringLiteral("posPlot"));
-        posPlot->setGeometry(QRect(560, 0, 591, 401));
-        layoutWidget = new QWidget(centralWidget);
-        layoutWidget->setObjectName(QStringLiteral("layoutWidget"));
-        layoutWidget->setGeometry(QRect(13, 30, 351, 121));
-        verticalLayout_6 = new QVBoxLayout(layoutWidget);
-        verticalLayout_6->setSpacing(6);
-        verticalLayout_6->setContentsMargins(11, 11, 11, 11);
-        verticalLayout_6->setObjectName(QStringLiteral("verticalLayout_6"));
-        verticalLayout_6->setContentsMargins(0, 0, 0, 0);
-        horizontalLayout_3 = new QHBoxLayout();
-        horizontalLayout_3->setSpacing(6);
-        horizontalLayout_3->setObjectName(QStringLiteral("horizontalLayout_3"));
-        verticalLayout_5 = new QVBoxLayout();
-        verticalLayout_5->setSpacing(6);
-        verticalLayout_5->setObjectName(QStringLiteral("verticalLayout_5"));
-        label_4 = new QLabel(layoutWidget);
-        label_4->setObjectName(QStringLiteral("label_4"));
-        label_4->setAlignment(Qt::AlignCenter);
 
-        verticalLayout_5->addWidget(label_4);
+        gridLayout->addWidget(posPlot, 0, 1, 5, 1);
 
-        partList = new QComboBox(layoutWidget);
-        partList->setObjectName(QStringLiteral("partList"));
+        verticalSpacer_3 = new QSpacerItem(20, 80, QSizePolicy::Minimum, QSizePolicy::Maximum);
 
-        verticalLayout_5->addWidget(partList);
+        gridLayout->addItem(verticalSpacer_3, 1, 0, 1, 1);
 
+        contModeLayout = new QVBoxLayout();
+        contModeLayout->setSpacing(6);
+        contModeLayout->setObjectName(QStringLiteral("contModeLayout"));
+        contModeLabel = new QLabel(centralWidget);
+        contModeLabel->setObjectName(QStringLiteral("contModeLabel"));
+        QFont font;
+        font.setPointSize(19);
+        contModeLabel->setFont(font);
+        contModeLabel->setAlignment(Qt::AlignCenter);
 
-        horizontalLayout_3->addLayout(verticalLayout_5);
+        contModeLayout->addWidget(contModeLabel);
 
-        verticalLayout_4 = new QVBoxLayout();
-        verticalLayout_4->setSpacing(6);
-        verticalLayout_4->setObjectName(QStringLiteral("verticalLayout_4"));
-        label_5 = new QLabel(layoutWidget);
-        label_5->setObjectName(QStringLiteral("label_5"));
-        label_5->setAlignment(Qt::AlignCenter);
+        contModeButtonLayout = new QHBoxLayout();
+        contModeButtonLayout->setSpacing(6);
+        contModeButtonLayout->setObjectName(QStringLiteral("contModeButtonLayout"));
+        posContButton = new QPushButton(centralWidget);
+        posContButton->setObjectName(QStringLiteral("posContButton"));
+        posContButton->setCheckable(true);
 
-        verticalLayout_4->addWidget(label_5);
+        contModeButtonLayout->addWidget(posContButton);
 
-        jointList = new QComboBox(layoutWidget);
-        jointList->setObjectName(QStringLiteral("jointList"));
+        velContButton = new QPushButton(centralWidget);
+        velContButton->setObjectName(QStringLiteral("velContButton"));
+        velContButton->setCheckable(true);
 
-        verticalLayout_4->addWidget(jointList);
+        contModeButtonLayout->addWidget(velContButton);
+
+        torContButton = new QPushButton(centralWidget);
+        torContButton->setObjectName(QStringLiteral("torContButton"));
+        torContButton->setCheckable(true);
+
+        contModeButtonLayout->addWidget(torContButton);
 
 
-        horizontalLayout_3->addLayout(verticalLayout_4);
+        contModeLayout->addLayout(contModeButtonLayout);
 
 
-        verticalLayout_6->addLayout(horizontalLayout_3);
+        gridLayout->addLayout(contModeLayout, 2, 0, 1, 1);
 
-        verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
-
-        verticalLayout_6->addItem(verticalSpacer);
-
-        horizontalLayout_2 = new QHBoxLayout();
-        horizontalLayout_2->setSpacing(6);
-        horizontalLayout_2->setObjectName(QStringLiteral("horizontalLayout_2"));
-        previousJointButton = new QPushButton(layoutWidget);
-        previousJointButton->setObjectName(QStringLiteral("previousJointButton"));
-
-        horizontalLayout_2->addWidget(previousJointButton);
-
-        nextJointButton = new QPushButton(layoutWidget);
-        nextJointButton->setObjectName(QStringLiteral("nextJointButton"));
-
-        horizontalLayout_2->addWidget(nextJointButton);
-
-
-        verticalLayout_6->addLayout(horizontalLayout_2);
-
-        layoutWidget1 = new QWidget(centralWidget);
-        layoutWidget1->setObjectName(QStringLiteral("layoutWidget1"));
-        layoutWidget1->setGeometry(QRect(10, 390, 529, 132));
-        verticalLayout_7 = new QVBoxLayout(layoutWidget1);
-        verticalLayout_7->setSpacing(6);
-        verticalLayout_7->setContentsMargins(11, 11, 11, 11);
-        verticalLayout_7->setObjectName(QStringLiteral("verticalLayout_7"));
-        verticalLayout_7->setContentsMargins(0, 0, 0, 0);
-        horizontalLayout_4 = new QHBoxLayout();
-        horizontalLayout_4->setSpacing(6);
-        horizontalLayout_4->setObjectName(QStringLiteral("horizontalLayout_4"));
         verticalLayout = new QVBoxLayout();
         verticalLayout->setSpacing(6);
         verticalLayout->setObjectName(QStringLiteral("verticalLayout"));
-        kp_label = new QLabel(layoutWidget1);
+        statusLayout = new QHBoxLayout();
+        statusLayout->setSpacing(6);
+        statusLayout->setObjectName(QStringLiteral("statusLayout"));
+        statusLabel = new QLabel(centralWidget);
+        statusLabel->setObjectName(QStringLiteral("statusLabel"));
+        QFont font1;
+        font1.setPointSize(14);
+        statusLabel->setFont(font1);
+        statusLabel->setAlignment(Qt::AlignCenter);
+
+        statusLayout->addWidget(statusLabel);
+
+        statusInfoLabel = new QLabel(centralWidget);
+        statusInfoLabel->setObjectName(QStringLiteral("statusInfoLabel"));
+        QFont font2;
+        font2.setFamily(QStringLiteral("Ubuntu Mono"));
+        font2.setPointSize(14);
+        statusInfoLabel->setFont(font2);
+        statusInfoLabel->setAlignment(Qt::AlignCenter);
+
+        statusLayout->addWidget(statusInfoLabel);
+
+
+        verticalLayout->addLayout(statusLayout);
+
+        verticalSpacer = new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Maximum);
+
+        verticalLayout->addItem(verticalSpacer);
+
+        closeHomeLayout = new QHBoxLayout();
+        closeHomeLayout->setSpacing(6);
+        closeHomeLayout->setObjectName(QStringLiteral("closeHomeLayout"));
+        closeSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        closeHomeLayout->addItem(closeSpacer);
+
+        closeButton = new QPushButton(centralWidget);
+        closeButton->setObjectName(QStringLiteral("closeButton"));
+
+        closeHomeLayout->addWidget(closeButton);
+
+        homeButton = new QPushButton(centralWidget);
+        homeButton->setObjectName(QStringLiteral("homeButton"));
+
+        closeHomeLayout->addWidget(homeButton);
+
+        homeSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+        closeHomeLayout->addItem(homeSpacer);
+
+
+        verticalLayout->addLayout(closeHomeLayout);
+
+
+        gridLayout->addLayout(verticalLayout, 6, 1, 1, 1);
+
+        verticalSpacer_2 = new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Maximum);
+
+        gridLayout->addItem(verticalSpacer_2, 5, 1, 1, 1);
+
+        jointSelectorLayout_2 = new QVBoxLayout();
+        jointSelectorLayout_2->setSpacing(6);
+        jointSelectorLayout_2->setObjectName(QStringLiteral("jointSelectorLayout_2"));
+        selectorComboBoxLayout = new QHBoxLayout();
+        selectorComboBoxLayout->setSpacing(6);
+        selectorComboBoxLayout->setObjectName(QStringLiteral("selectorComboBoxLayout"));
+        partLayout = new QVBoxLayout();
+        partLayout->setSpacing(6);
+        partLayout->setObjectName(QStringLiteral("partLayout"));
+        partLabel = new QLabel(centralWidget);
+        partLabel->setObjectName(QStringLiteral("partLabel"));
+        partLabel->setAlignment(Qt::AlignCenter);
+
+        partLayout->addWidget(partLabel);
+
+        partList = new QComboBox(centralWidget);
+        partList->setObjectName(QStringLiteral("partList"));
+
+        partLayout->addWidget(partList);
+
+
+        selectorComboBoxLayout->addLayout(partLayout);
+
+        jointLayout = new QVBoxLayout();
+        jointLayout->setSpacing(6);
+        jointLayout->setObjectName(QStringLiteral("jointLayout"));
+        jointLabel = new QLabel(centralWidget);
+        jointLabel->setObjectName(QStringLiteral("jointLabel"));
+        jointLabel->setAlignment(Qt::AlignCenter);
+
+        jointLayout->addWidget(jointLabel);
+
+        jointList = new QComboBox(centralWidget);
+        jointList->setObjectName(QStringLiteral("jointList"));
+
+        jointLayout->addWidget(jointList);
+
+
+        selectorComboBoxLayout->addLayout(jointLayout);
+
+
+        jointSelectorLayout_2->addLayout(selectorComboBoxLayout);
+
+        jointButtonSpacer = new QSpacerItem(20, 10, QSizePolicy::Minimum, QSizePolicy::Maximum);
+
+        jointSelectorLayout_2->addItem(jointButtonSpacer);
+
+        jointSelectorLayout = new QHBoxLayout();
+        jointSelectorLayout->setSpacing(6);
+        jointSelectorLayout->setObjectName(QStringLiteral("jointSelectorLayout"));
+        previousJointButton = new QPushButton(centralWidget);
+        previousJointButton->setObjectName(QStringLiteral("previousJointButton"));
+
+        jointSelectorLayout->addWidget(previousJointButton);
+
+        nextJointButton = new QPushButton(centralWidget);
+        nextJointButton->setObjectName(QStringLiteral("nextJointButton"));
+
+        jointSelectorLayout->addWidget(nextJointButton);
+
+
+        jointSelectorLayout_2->addLayout(jointSelectorLayout);
+
+
+        gridLayout->addLayout(jointSelectorLayout_2, 0, 0, 1, 1);
+
+        gainsLayout = new QVBoxLayout();
+        gainsLayout->setSpacing(6);
+        gainsLayout->setObjectName(QStringLiteral("gainsLayout"));
+        gainInputLayout = new QHBoxLayout();
+        gainInputLayout->setSpacing(6);
+        gainInputLayout->setObjectName(QStringLiteral("gainInputLayout"));
+        kpLayout = new QVBoxLayout();
+        kpLayout->setSpacing(6);
+        kpLayout->setObjectName(QStringLiteral("kpLayout"));
+        kp_label = new QLabel(centralWidget);
         kp_label->setObjectName(QStringLiteral("kp_label"));
         kp_label->setAlignment(Qt::AlignCenter);
 
-        verticalLayout->addWidget(kp_label);
+        kpLayout->addWidget(kp_label);
 
-        kp_in = new QLineEdit(layoutWidget1);
+        kp_in = new QLineEdit(centralWidget);
         kp_in->setObjectName(QStringLiteral("kp_in"));
 
-        verticalLayout->addWidget(kp_in);
+        kpLayout->addWidget(kp_in);
 
 
-        horizontalLayout_4->addLayout(verticalLayout);
+        gainInputLayout->addLayout(kpLayout);
 
-        verticalLayout_2 = new QVBoxLayout();
-        verticalLayout_2->setSpacing(6);
-        verticalLayout_2->setObjectName(QStringLiteral("verticalLayout_2"));
-        kd_label = new QLabel(layoutWidget1);
+        kdLayout = new QVBoxLayout();
+        kdLayout->setSpacing(6);
+        kdLayout->setObjectName(QStringLiteral("kdLayout"));
+        kd_label = new QLabel(centralWidget);
         kd_label->setObjectName(QStringLiteral("kd_label"));
         kd_label->setAlignment(Qt::AlignCenter);
 
-        verticalLayout_2->addWidget(kd_label);
+        kdLayout->addWidget(kd_label);
 
-        kd_in = new QLineEdit(layoutWidget1);
+        kd_in = new QLineEdit(centralWidget);
         kd_in->setObjectName(QStringLiteral("kd_in"));
 
-        verticalLayout_2->addWidget(kd_in);
+        kdLayout->addWidget(kd_in);
 
 
-        horizontalLayout_4->addLayout(verticalLayout_2);
+        gainInputLayout->addLayout(kdLayout);
 
-        verticalLayout_3 = new QVBoxLayout();
-        verticalLayout_3->setSpacing(6);
-        verticalLayout_3->setObjectName(QStringLiteral("verticalLayout_3"));
-        ki_label = new QLabel(layoutWidget1);
+        kiLayout = new QVBoxLayout();
+        kiLayout->setSpacing(6);
+        kiLayout->setObjectName(QStringLiteral("kiLayout"));
+        ki_label = new QLabel(centralWidget);
         ki_label->setObjectName(QStringLiteral("ki_label"));
         ki_label->setAlignment(Qt::AlignCenter);
 
-        verticalLayout_3->addWidget(ki_label);
+        kiLayout->addWidget(ki_label);
 
-        ki_in = new QLineEdit(layoutWidget1);
+        ki_in = new QLineEdit(centralWidget);
         ki_in->setObjectName(QStringLiteral("ki_in"));
 
-        verticalLayout_3->addWidget(ki_in);
+        kiLayout->addWidget(ki_in);
 
 
-        horizontalLayout_4->addLayout(verticalLayout_3);
+        gainInputLayout->addLayout(kiLayout);
 
-        gainTestButton = new QPushButton(layoutWidget1);
+        gainTestButton = new QPushButton(centralWidget);
         gainTestButton->setObjectName(QStringLiteral("gainTestButton"));
         gainTestButton->setMinimumSize(QSize(0, 54));
 
-        horizontalLayout_4->addWidget(gainTestButton);
+        gainInputLayout->addWidget(gainTestButton);
 
 
-        verticalLayout_7->addLayout(horizontalLayout_4);
+        gainsLayout->addLayout(gainInputLayout);
 
-        horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+        verticalSpacer_6 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
 
-        verticalLayout_7->addItem(horizontalSpacer);
+        gainsLayout->addItem(verticalSpacer_6);
 
-        saveGainsButton = new QPushButton(layoutWidget1);
+        gainResetButton = new QPushButton(centralWidget);
+        gainResetButton->setObjectName(QStringLiteral("gainResetButton"));
+
+        gainsLayout->addWidget(gainResetButton, 0, Qt::AlignHCenter|Qt::AlignVCenter);
+
+        verticalSpacer_5 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        gainsLayout->addItem(verticalSpacer_5);
+
+        saveGainsButton = new QPushButton(centralWidget);
         saveGainsButton->setObjectName(QStringLiteral("saveGainsButton"));
+        QSizePolicy sizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+        sizePolicy.setHorizontalStretch(200);
+        sizePolicy.setVerticalStretch(0);
+        sizePolicy.setHeightForWidth(saveGainsButton->sizePolicy().hasHeightForWidth());
+        saveGainsButton->setSizePolicy(sizePolicy);
+        saveGainsButton->setMinimumSize(QSize(300, 40));
+        saveGainsButton->setMaximumSize(QSize(80000, 80));
 
-        verticalLayout_7->addWidget(saveGainsButton);
-
-        layoutWidget2 = new QWidget(centralWidget);
-        layoutWidget2->setObjectName(QStringLiteral("layoutWidget2"));
-        layoutWidget2->setGeometry(QRect(10, 200, 361, 101));
-        verticalLayout_8 = new QVBoxLayout(layoutWidget2);
-        verticalLayout_8->setSpacing(6);
-        verticalLayout_8->setContentsMargins(11, 11, 11, 11);
-        verticalLayout_8->setObjectName(QStringLiteral("verticalLayout_8"));
-        verticalLayout_8->setContentsMargins(0, 0, 0, 0);
-        label = new QLabel(layoutWidget2);
-        label->setObjectName(QStringLiteral("label"));
-        QFont font;
-        font.setPointSize(19);
-        label->setFont(font);
-        label->setAlignment(Qt::AlignCenter);
-
-        verticalLayout_8->addWidget(label);
-
-        horizontalLayout_5 = new QHBoxLayout();
-        horizontalLayout_5->setSpacing(6);
-        horizontalLayout_5->setObjectName(QStringLiteral("horizontalLayout_5"));
-        posContButton = new QPushButton(layoutWidget2);
-        posContButton->setObjectName(QStringLiteral("posContButton"));
-
-        horizontalLayout_5->addWidget(posContButton);
-
-        velContButton = new QPushButton(layoutWidget2);
-        velContButton->setObjectName(QStringLiteral("velContButton"));
-
-        horizontalLayout_5->addWidget(velContButton);
-
-        torContButton = new QPushButton(layoutWidget2);
-        torContButton->setObjectName(QStringLiteral("torContButton"));
-
-        horizontalLayout_5->addWidget(torContButton);
+        gainsLayout->addWidget(saveGainsButton, 0, Qt::AlignHCenter|Qt::AlignVCenter);
 
 
-        verticalLayout_8->addLayout(horizontalLayout_5);
+        gridLayout->addLayout(gainsLayout, 4, 0, 3, 1);
 
-        layoutWidget3 = new QWidget(centralWidget);
-        layoutWidget3->setObjectName(QStringLiteral("layoutWidget3"));
-        layoutWidget3->setGeometry(QRect(710, 430, 291, 41));
-        horizontalLayout = new QHBoxLayout(layoutWidget3);
-        horizontalLayout->setSpacing(6);
-        horizontalLayout->setContentsMargins(11, 11, 11, 11);
-        horizontalLayout->setObjectName(QStringLiteral("horizontalLayout"));
-        horizontalLayout->setContentsMargins(0, 0, 0, 0);
-        horizontalSpacer_2 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+        verticalSpacer_4 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Maximum);
 
-        horizontalLayout->addItem(horizontalSpacer_2);
-
-        closeButton = new QPushButton(layoutWidget3);
-        closeButton->setObjectName(QStringLiteral("closeButton"));
-
-        horizontalLayout->addWidget(closeButton);
-
-        homeButton = new QPushButton(layoutWidget3);
-        homeButton->setObjectName(QStringLiteral("homeButton"));
-
-        horizontalLayout->addWidget(homeButton);
-
-        horizontalSpacer_3 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-
-        horizontalLayout->addItem(horizontalSpacer_3);
+        gridLayout->addItem(verticalSpacer_4, 3, 0, 1, 1);
 
         MainWindow->setCentralWidget(centralWidget);
-        layoutWidget->raise();
-        layoutWidget->raise();
-        layoutWidget->raise();
-        layoutWidget->raise();
         posPlot->raise();
+        statusLabel->raise();
+        statusInfoLabel->raise();
         menuBar = new QMenuBar(MainWindow);
         menuBar->setObjectName(QStringLiteral("menuBar"));
         menuBar->setGeometry(QRect(0, 0, 1161, 25));
@@ -333,21 +403,24 @@ public:
     void retranslateUi(QMainWindow *MainWindow)
     {
         MainWindow->setWindowTitle(QApplication::translate("MainWindow", "MainWindow", 0));
-        label_4->setText(QApplication::translate("MainWindow", "Robot Part", 0));
-        label_5->setText(QApplication::translate("MainWindow", "Joint", 0));
+        contModeLabel->setText(QApplication::translate("MainWindow", "Control Mode", 0));
+        posContButton->setText(QApplication::translate("MainWindow", "Position", 0));
+        velContButton->setText(QApplication::translate("MainWindow", "Velocity", 0));
+        torContButton->setText(QApplication::translate("MainWindow", "Torque", 0));
+        statusLabel->setText(QApplication::translate("MainWindow", "Status:", 0));
+        statusInfoLabel->setText(QApplication::translate("MainWindow", "status_info", 0));
+        closeButton->setText(QApplication::translate("MainWindow", "Close", 0));
+        homeButton->setText(QApplication::translate("MainWindow", "Go To Home", 0));
+        partLabel->setText(QApplication::translate("MainWindow", "Robot Part", 0));
+        jointLabel->setText(QApplication::translate("MainWindow", "Joint", 0));
         previousJointButton->setText(QApplication::translate("MainWindow", "Previous Joint", 0));
         nextJointButton->setText(QApplication::translate("MainWindow", "Next Joint", 0));
         kp_label->setText(QApplication::translate("MainWindow", "Kp", 0));
         kd_label->setText(QApplication::translate("MainWindow", "Kd", 0));
         ki_label->setText(QApplication::translate("MainWindow", "Ki", 0));
         gainTestButton->setText(QApplication::translate("MainWindow", "Test Gains", 0));
+        gainResetButton->setText(QApplication::translate("MainWindow", "Reset Gains", 0));
         saveGainsButton->setText(QApplication::translate("MainWindow", "Save Gains", 0));
-        label->setText(QApplication::translate("MainWindow", "Control Mode", 0));
-        posContButton->setText(QApplication::translate("MainWindow", "Position", 0));
-        velContButton->setText(QApplication::translate("MainWindow", "Velocity", 0));
-        torContButton->setText(QApplication::translate("MainWindow", "Torque", 0));
-        closeButton->setText(QApplication::translate("MainWindow", "Close", 0));
-        homeButton->setText(QApplication::translate("MainWindow", "Go To Home", 0));
         menuPID_Tuner->setTitle(QApplication::translate("MainWindow", "PID Tuner", 0));
     } // retranslateUi
 

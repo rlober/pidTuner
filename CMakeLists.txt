@@ -55,4 +55,4 @@ add_executable(${PROJECTNAME_CONTROLLER} ${controller_source} ${controller_heade
 target_link_libraries(${PROJECTNAME_CONTROLLER} ${YARP_LIBRARIES} ${Boost_LIBRARIES} Qt5::Widgets Qt5::PrintSupport icubmod )
 
 add_executable(${PROJECTNAME_GUI} ${gui_source} ${gui_header})
-target_link_libraries(${PROJECTNAME_GUI} Qt5::Widgets Qt5::PrintSupport)
+target_link_libraries(${PROJECTNAME_GUI} Qt5::Widgets Qt5::PrintSupport ${YARP_LIBRARIES})

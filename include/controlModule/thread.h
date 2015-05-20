@@ -1,10 +1,15 @@
 #include <yarp/os/Network.h>
+#include <yarp/os/BufferedPort.h>
+#include <yarp/os/Port.h>
+#include <yarp/os/all.h>
+
 
 #include <yarp/os/RateThread.h>
 #include <yarp/os/Time.h>
 #include <yarp/sig/Vector.h>
 #include <yarp/sig/all.h>
 #include <yarp/math/Math.h>
+
 
 #include <yarp/dev/Drivers.h>
 #include <yarp/dev/PolyDriver.h>
@@ -16,12 +21,13 @@
 #include <stdlib.h>
 #include <fstream>
 #include <time.h>
-#include  <sstream>
+#include <sstream>
 #include <boost/filesystem.hpp>
 
 #include <yarp/dev/ControlBoardInterfaces.h>
 
 #include <yarp/dev/IControlMode2.h>
+
 
 
 YARP_DECLARE_DEVICES(icubmod)
@@ -71,6 +77,9 @@ class CtrlThread: public RateThread
         int reversalCounter;
 
 
+
+
+
     public:
         CtrlThread(const double period);
 
@@ -96,5 +105,18 @@ class CtrlThread: public RateThread
         const std::string currentDateTime();
 
         bool isFinished();
+
+    private:
+        double Kp, Kd, Ki;
+        void sendPidGains();
+        void parseIncomingGains(Bottle *newGainMessage);
+        void updatePidInformation();
+
+        BufferedPort<Bottle>    gainsBufPort_in; // incoming new gains
+        Port                    gainsPort_out; // outgoing current gains
+
+        BufferedPort<Bottle>    goToHomeBufPort_in; // incoming gotToHome Command
+
+        BufferedPort<Bottle>    robotPartAndJointBufPort_in;
 
 };

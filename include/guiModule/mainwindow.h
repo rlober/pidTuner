@@ -2,7 +2,23 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QMessageBox>
 
+#include <yarp/os/Network.h>
+#include <yarp/os/BufferedPort.h>
+#include <yarp/os/Port.h>
+#include <yarp/os/all.h>
+
+//
+// #include <yarp/os/RateThread.h>
+// #include <yarp/os/Time.h>
+// #include <yarp/sig/Vector.h>
+// #include <yarp/sig/all.h>
+// #include <yarp/math/Math.h>
+
+// YARP_DECLARE_DEVICES(icubmod)
+
+// using namespace yarp::os;
 
 namespace Ui {
 class MainWindow;
@@ -16,28 +32,83 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-public slots:
+    void initializeGui();
+
+private slots:
     void createPlot();
     void on_gainTestButton_clicked();
     void addPartsToList();
-    void on_partList_currentIndexChanged(int index);
+    void on_partList_currentIndexChanged(int partId);
+    // void on_jointList_currentIndexChanged(int jointId);
     void on_closeButton_clicked();
 
-private slots:
-    void on_posContButton_clicked();
 
-    void on_velContButton_clicked();
-
-    void on_torContButton_clicked();
 
     void on_homeButton_clicked();
 
+    void on_nextJointButton_clicked();
+
+    void on_previousJointButton_clicked();
+
+    void on_posContButton_clicked(bool checked);
+
+    void on_velContButton_clicked(bool checked);
+
+    void on_torContButton_clicked(bool checked);
+
+    void on_kd_in_editingFinished();
+
+    void on_kp_in_editingFinished();
+
+    void on_ki_in_editingFinished();
+
+    void on_saveGainsButton_clicked();
+
+    void on_gainResetButton_clicked();
+
+
+    void on_partList_highlighted(int index);
+
+
+
+    void on_jointList_highlighted(int index);
+
 private:
     Ui::MainWindow *ui;
-    //Foo *fooObject;
-    QString controlType, yPlotLabel;
-    bool isOnlyMajorJoints;
+
+
+
+
+
+    //Functions
     void resetYLabel();
+    void setCurrentPartAndJoint();
+    bool discardChanges();
+    void saveGains();
+    void refreshGainDisplays();
+    bool getPidGains();
+    bool setPidGains();
+    void sendPartAndJointIndexes();
+
+    //Variables
+    QString controlType, yPlotLabel;
+    bool isOnlyMajorJoints, gainsHaveBeenChanged;
+    int partIndex, jointIndex;
+
+
+    double Kp_new, Kd_new, Ki_new;
+    double Kp_old, Kd_old, Ki_old;
+
+    yarp::os::Network yarp;
+
+    yarp::os::BufferedPort<yarp::os::Bottle> gainsBufPort_out;
+    yarp::os::Port                           gainsPort_in;
+
+
+    yarp::os::BufferedPort<yarp::os::Bottle> goToHomeBufPort_out;
+
+    yarp::os::BufferedPort<yarp::os::Bottle> robotPartAndJointBufPort_out;
+
 };
 
 #endif // MAINWINDOW_H

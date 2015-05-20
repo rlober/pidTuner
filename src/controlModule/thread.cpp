@@ -65,7 +65,13 @@ bool CtrlThread::threadInit()
     reverseDirectrion = false;
     reversalCounter = 0;
 
+    //Open yarp ports
+    gainsBufPort_in.open("/pidTunerController/gains/in");
+    gainsPort_out.open("/pidTunerController/gains/out");
 
+    goToHomeBufPort_in.open("/pidTunerController/goToHome/in");
+
+    robotPartAndJointBufPort_in.open("/pidTunerController/partAndJointIndexes/in");
 
     return true;
 
@@ -85,6 +91,31 @@ void CtrlThread::afterStart(bool s)
 
 void CtrlThread::run()
 {
+    // Check if new gains have come in or if the user wants the current gains
+    Bottle *gainsMessage = gainsBufPort_in.read(false);
+    if (gainsMessage!=NULL) {
+        parseIncomingGains(gainsMessage);
+        sendPidGains();
+    }
+
+    // Check if the user wants to go to Home Pose
+    Bottle *goToHomeMessage = goToHomeBufPort_in.read(false);
+    if (goToHomeMessage!=NULL) {
+        if(goToHomeMessage->get(0).asInt()==1){
+            setCommandToHome();
+        }
+    }
+
+    Bottle *robotPartAndJointMessage = robotPartAndJointBufPort_in.read(false);
+    if (robotPartAndJointMessage!=NULL) {
+        partIndex = robotPartAndJointMessage->get(0).asInt();
+        jointIndex = robotPartAndJointMessage->get(1).asInt();
+        updatePidInformation();
+        std::cout << partIndex << " " << jointIndex << std::endl;
+    }
+
+
+
 
 
 
@@ -101,6 +132,11 @@ void CtrlThread::run()
 }
 
 /********************************************************/
+
+void CtrlThread::updatePidInformation()
+{
+    // when part and/or joints change reset the Kpdi gains
+}
 
 void CtrlThread::threadRelease()
 {
@@ -260,6 +296,37 @@ void CtrlThread::setCommandToHome()
             command[rp][jnt] = homeVectors[rp][jnt];
         }
     }
+    jointCommandsHaveBeenUpdated = true;
+}
+
+
+void CtrlThread::parseIncomingGains(Bottle *newGainMessage)
+{
+    int messageIndicator = newGainMessage->get(0).asInt();
+    if (messageIndicator == 1)
+    {
+        std::cout   << "Kp = " << newGainMessage->get(1).asDouble()
+                    << " Kd = " << newGainMessage->get(2).asDouble()
+                    << " Ki = " << newGainMessage->get(3).asDouble()
+                    << std::endl;
+        Kp = newGainMessage->get(1).asDouble();
+        Kd = newGainMessage->get(2).asDouble();
+        Ki = newGainMessage->get(3).asDouble();
+    }
+
+}
+
+
+
+
+void CtrlThread::sendPidGains()
+{
+    Bottle gainsBottle_out; // Get a place to store things.
+    gainsBottle_out.clear();
+    gainsBottle_out.addDouble(Kp);
+    gainsBottle_out.addDouble(Kd);
+    gainsBottle_out.addDouble(Ki);
+    gainsPort_out.write(gainsBottle_out);
 }
 
 //
