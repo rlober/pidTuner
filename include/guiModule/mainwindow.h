@@ -39,39 +39,21 @@ private slots:
     void on_gainTestButton_clicked();
     void addPartsToList();
     void on_partList_currentIndexChanged(int partId);
-    // void on_jointList_currentIndexChanged(int jointId);
+    void on_jointList_currentIndexChanged(int jointId);
     void on_closeButton_clicked();
-
-
-
     void on_homeButton_clicked();
-
     void on_nextJointButton_clicked();
-
     void on_previousJointButton_clicked();
-
     void on_posContButton_clicked(bool checked);
-
     void on_velContButton_clicked(bool checked);
-
     void on_torContButton_clicked(bool checked);
-
     void on_kd_in_editingFinished();
-
     void on_kp_in_editingFinished();
-
     void on_ki_in_editingFinished();
-
     void on_saveGainsButton_clicked();
-
     void on_gainResetButton_clicked();
-
-
-    void on_partList_highlighted(int index);
-
-
-
-    void on_jointList_highlighted(int index);
+    // void on_partList_highlighted(int index);
+    // void on_jointList_highlighted(int index);
 
 private:
     Ui::MainWindow *ui;
@@ -89,11 +71,14 @@ private:
     bool getPidGains();
     bool setPidGains();
     void sendPartAndJointIndexes();
+    void sendControlMode();
 
     //Variables
-    QString controlType, yPlotLabel;
+    QString yPlotLabel;
     bool isOnlyMajorJoints, gainsHaveBeenChanged;
-    int partIndex, jointIndex;
+    int controlMode, partIndex, jointIndex;
+
+    bool initFinished;
 
 
     double Kp_new, Kd_new, Ki_new;
@@ -108,6 +93,8 @@ private:
     yarp::os::BufferedPort<yarp::os::Bottle> goToHomeBufPort_out;
 
     yarp::os::BufferedPort<yarp::os::Bottle> robotPartAndJointBufPort_out;
+
+    yarp::os::BufferedPort<yarp::os::Bottle> controlModeBufPort_out;
 
 };
 

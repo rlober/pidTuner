@@ -4,6 +4,10 @@
 #define DEG_TO_RAD M_PI / 180.
 #define RAD_TO_DEG 180. / M_PI
 
+#define POSITION_MODE 0
+#define VELOCITY_MODE 1
+#define TORQUE_MODE 2
+
 
 
 CtrlThread::CtrlThread(const double period) : RateThread(int(period*1000.0))
@@ -24,6 +28,8 @@ bool CtrlThread::threadInit()
     isVelocityMode  = false;
     isTorqueMode    = false;
 
+    Kp_thread = Kd_thread = Ki_thread = 0.0;
+
     partIndex = 0;
     jointIndex = 0;
 
@@ -42,6 +48,7 @@ bool CtrlThread::threadInit()
     iVel.resize(numRobotParts);
     iTrq.resize(numRobotParts);
     iLims.resize(numRobotParts);
+    iPids.resize(numRobotParts);
 
 
     encoders.resize(numRobotParts);
@@ -60,7 +67,7 @@ bool CtrlThread::threadInit()
 
     jointCommandsHaveBeenUpdated = false;
     controlThreadFinished = false;
-
+    applyExcitationSignal = false;
 
     reverseDirectrion = false;
     reversalCounter = 0;
@@ -72,6 +79,8 @@ bool CtrlThread::threadInit()
     goToHomeBufPort_in.open("/pidTunerController/goToHome/in");
 
     robotPartAndJointBufPort_in.open("/pidTunerController/partAndJointIndexes/in");
+
+    controlModeBufPort_in.open("/pidTunerController/controlMode/in");
 
     return true;
 
@@ -111,15 +120,22 @@ void CtrlThread::run()
         partIndex = robotPartAndJointMessage->get(0).asInt();
         jointIndex = robotPartAndJointMessage->get(1).asInt();
         updatePidInformation();
-        std::cout << partIndex << " " << jointIndex << std::endl;
+    }
+
+    Bottle *controlModeMessage = controlModeBufPort_in.read(false);
+    if (controlModeMessage!=NULL) {
+        parseIncomingControlMode(controlModeMessage);
+        updatePidInformation();
     }
 
 
+    if (applyExcitationSignal) {
+        double signalOutput = excitationSignal(signalStartTime);
+        command[partIndex][jointIndex] = homeVectors[partIndex][jointIndex] + signalOutput;
+    }
 
 
-
-
-    if(jointCommandsHaveBeenUpdated)
+    if(jointCommandsHaveBeenUpdated || applyExcitationSignal)
     {
         sendJointCommands();
     }
@@ -133,10 +149,7 @@ void CtrlThread::run()
 
 /********************************************************/
 
-void CtrlThread::updatePidInformation()
-{
-    // when part and/or joints change reset the Kpdi gains
-}
+
 
 void CtrlThread::threadRelease()
 {
@@ -187,6 +200,8 @@ bool CtrlThread::openInterfaces()
         ok = ok && robotDevice[rp]->view(iVel[rp]);
         ok = ok && robotDevice[rp]->view(iTrq[rp]);
         ok = ok && robotDevice[rp]->view(iLims[rp]);
+        ok = ok && robotDevice[rp]->view(iPids[rp]);
+
 
 
 
@@ -305,14 +320,94 @@ void CtrlThread::parseIncomingGains(Bottle *newGainMessage)
     int messageIndicator = newGainMessage->get(0).asInt();
     if (messageIndicator == 1)
     {
-        std::cout   << "Kp = " << newGainMessage->get(1).asDouble()
+        std::cout   << "trying to set part, "<<partIndex<<" & joint, "<< jointIndex << " to PID:\n"
+                    << "Kp = " << newGainMessage->get(1).asDouble()
                     << " Kd = " << newGainMessage->get(2).asDouble()
                     << " Ki = " << newGainMessage->get(3).asDouble()
                     << std::endl;
-        Kp = newGainMessage->get(1).asDouble();
-        Kd = newGainMessage->get(2).asDouble();
-        Ki = newGainMessage->get(3).asDouble();
+        Pid newPid;
+        newPid.setKp(newGainMessage->get(1).asDouble());
+        newPid.setKd(newGainMessage->get(2).asDouble());
+        newPid.setKi(newGainMessage->get(3).asDouble());
+
+        //send new Pid to device
+        std::cout<< "sending Kp = "<< newPid.kp <<" Kd = "<< newPid.kd << " Ki = "<< newPid.ki <<" to device\n"<<std::endl;
+        if (!iPids[partIndex]->setPid(jointIndex, newPid)) {
+
+            std::cout<<"send failed...\n";
+            // Time::delay(0.001);
+        }
+
+        //Get those gains from the device to make sure they set properly
+
+        updatePidInformation();
+        std::cout<< "gains set to device:\nKp = "<< Kp_thread <<" Kd = "<< Kd_thread << " Ki = "<< Ki_thread <<"\n"<<std::endl;
+
+
+        signalStartTime = Time::now();
+        applyExcitationSignal = true;
+
     }
+
+}
+
+void CtrlThread::parseIncomingControlMode(Bottle *newControlModeMessage)
+{
+    int newControlMode = newControlModeMessage->get(0).asInt();
+    switch (newControlMode) {
+        case POSITION_MODE:
+            isPositionMode = true;
+            isVelocityMode = false;
+            isTorqueMode = false;
+            std::cout << "Switching to POSITION control." << std::endl;
+            break;
+
+        case VELOCITY_MODE:
+            isPositionMode = false;
+            isVelocityMode = true;
+            isTorqueMode = false;
+            std::cout << "Switching to VELOCITY control." << std::endl;
+            break;
+
+        case TORQUE_MODE:
+            isPositionMode = false;
+            isVelocityMode = false;
+            isTorqueMode = true;
+            std::cout << "Switching to TORQUE control." << std::endl;
+            break;
+
+        default:
+            isPositionMode = true;
+            isVelocityMode = false;
+            isTorqueMode = false;
+            std::cout << "[WARNING] Defaulting to POSITION control." << std::endl;
+            break;
+    }
+
+    /*
+        Need to implement control mode switch here...
+
+     */
+}
+
+void CtrlThread::updatePidInformation()
+{
+    Pid* currentPid;
+    if (iPids[partIndex]==NULL) {
+        std::cout << "no iPid device" << std::endl;
+    }
+
+
+    if(iPids[partIndex]->getPid(jointIndex, currentPid))
+    {
+        Kp_thread = currentPid->kp;
+        Kd_thread = currentPid->kd;
+        Ki_thread = currentPid->ki;
+    }
+    else{
+        std::cout << "[ERROR] Couldn't retrieve PID from part "<<partIndex << ", joint " << jointIndex<<"." << std::endl;
+    }
+
 
 }
 
@@ -323,9 +418,9 @@ void CtrlThread::sendPidGains()
 {
     Bottle gainsBottle_out; // Get a place to store things.
     gainsBottle_out.clear();
-    gainsBottle_out.addDouble(Kp);
-    gainsBottle_out.addDouble(Kd);
-    gainsBottle_out.addDouble(Ki);
+    gainsBottle_out.addDouble(Kp_thread);
+    gainsBottle_out.addDouble(Kd_thread);
+    gainsBottle_out.addDouble(Ki_thread);
     gainsPort_out.write(gainsBottle_out);
 }
 
@@ -343,8 +438,6 @@ void CtrlThread::createPidLog()
     pidLogFilePath = baseFilePath + "/jointPidGains"+extension;
     pidFile.open(pidLogFilePath.c_str());
     pidFile.close();
-
-
 }
 
 void CtrlThread::writeToPidLog()
@@ -377,6 +470,38 @@ const std::string CtrlThread::currentDateTime()
 bool CtrlThread::isFinished()
 {
     return controlThreadFinished;
+}
+
+
+
+double CtrlThread::excitationSignal(double triggerTime)
+{
+    double relativeT = triggerTime - Time::now();
+    double applyInputTime = 0.5;
+    double signalDuration = 1.0;
+
+
+
+    if (isPositionMode) { // need to implement different signal types
+        double stepAmplitude = 5.5; //deg
+        if (relativeT<applyInputTime) {
+            return 0.0;
+        }
+        else if (relativeT>=applyInputTime && relativeT<(applyInputTime+signalDuration)) {
+            return stepAmplitude;
+        }
+        else if (relativeT>=(applyInputTime+signalDuration)){
+            applyExcitationSignal = false;
+            return 0.0;
+        }
+    else
+    {
+
+        return 0.0;
+    }
+
+
+    }
 }
 
 

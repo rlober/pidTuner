@@ -2,6 +2,11 @@
 #include "ui_mainwindow.h"
 #include <iostream>
 
+#define POSITION_MODE 0
+#define VELOCITY_MODE 1
+#define TORQUE_MODE 2
+
+
 using namespace yarp::os;
 
 
@@ -9,10 +14,10 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
-    ui->setupUi(this);
-    createPlot();
-    addPartsToList();
-    controlType = "position";
+
+
+
+    controlMode = POSITION_MODE;
     yPlotLabel = "y";
     isOnlyMajorJoints = true;
     gainsHaveBeenChanged = false;
@@ -27,6 +32,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     robotPartAndJointBufPort_out.open("/pidTunerGui/partAndJointIndexes/out");
 
+    controlModeBufPort_out.open("/pidTunerGui/controlMode/out");
+
     ///////////////////////////////////
     while(!yarp.connect("/pidTunerGui/gains/out", "/pidTunerController/gains/in") ){Time::delay(0.1);}
     while(!yarp.connect("/pidTunerController/gains/out", "/pidTunerGui/gains/in") ){Time::delay(0.1);}
@@ -35,7 +42,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
     while(!yarp.connect("/pidTunerGui/partAndJointIndexes/out", "/pidTunerController/partAndJointIndexes/in") ){Time::delay(0.1);}
 
+    while(!yarp.connect("/pidTunerGui/controlMode/out", "/pidTunerController/controlMode/in") ){Time::delay(0.1);}
+
+    initFinished = false;
+    ui->setupUi(this);
     initializeGui();
+    initFinished = true;
 
 }
 
@@ -48,20 +60,12 @@ void MainWindow::setCurrentPartAndJoint()
 {
     ui->partList->setCurrentIndex(partIndex);
     ui->jointList->setCurrentIndex(jointIndex);
-    // qDebug()<< "sent a message1";
-    // setCurrentPartAndJoint();
 }
 
 void MainWindow::initializeGui()
 {
-
-    jointIndex = 0;
-    partIndex = 0;
-    setCurrentPartAndJoint();
-
-    jointIndex = 1;
-    partIndex = 1;
-    setCurrentPartAndJoint();
+    createPlot();
+    addPartsToList();
 
     partIndex=ui->partList->count()-1;
     ui->partList->setCurrentIndex(partIndex);
@@ -72,7 +76,8 @@ void MainWindow::initializeGui()
     ui->statusInfoLabel->setText("ready");
 
     getPidGains();
-    refreshGainDisplays();
+
+
 }
 
 
@@ -140,7 +145,6 @@ void MainWindow::resetYLabel()
 void MainWindow::on_partList_currentIndexChanged(int partId)
 {
     ui->jointList->clear();
-    jointIndex = 0;
     partIndex = partId;
     switch(partIndex)
     {
@@ -222,14 +226,19 @@ void MainWindow::on_partList_currentIndexChanged(int partId)
         break;
     }
 
-    // sendPartAndJointIndexes();
+
+    jointIndex = ui->jointList->count()-1;
+    ui->jointList->setCurrentIndex(jointIndex);
+
 }
 
-// void MainWindow::on_jointList_currentIndexChanged(int jointId)
-// {
-//     jointIndex = jointId;
-//     sendPartAndJointIndexes();
-// }
+void MainWindow::on_jointList_currentIndexChanged(int jointId)
+{
+    jointIndex = jointId;
+    if (initFinished && jointId>=0){
+        sendPartAndJointIndexes();
+    }
+}
 
 
 
@@ -278,20 +287,24 @@ void MainWindow::on_nextJointButton_clicked()
         if (jointIndex<0)
         {
             partIndex--;
-            ui->partList->setCurrentIndex(partIndex);
+
+                if(partIndex<0)
+                {
+                    partIndex=numRobotParts-1;
+                    ui->partList->setCurrentIndex(partIndex);
+                }
+                else
+                {
+                    ui->partList->setCurrentIndex(partIndex);
+                }
+
             jointIndex = ui->jointList->count()-1;
         }
 
-        if(partIndex<0)
-        {
-            jointIndex=0;
-            partIndex=numRobotParts-1;
-            ui->partList->setCurrentIndex(partIndex);
-            jointIndex = ui->jointList->count()-1;
-        }
 
+        ui->jointList->setCurrentIndex(jointIndex);
 
-        setCurrentPartAndJoint();
+        // setCurrentPartAndJoint();
     }
 }
 
@@ -300,7 +313,8 @@ void MainWindow::on_posContButton_clicked(bool checked)
 {
     if(discardChanges()){
         if (checked){
-            controlType = "position";
+            controlMode = POSITION_MODE;
+            sendControlMode();
             yPlotLabel = "q (deg)";
             resetYLabel();
             ui->velContButton->setChecked(false);
@@ -314,7 +328,8 @@ void MainWindow::on_velContButton_clicked(bool checked)
 {
     if(discardChanges()){
         if (checked){
-            controlType = "velocity";
+            controlMode = VELOCITY_MODE;
+            sendControlMode();
             yPlotLabel = "dq (deg/sec)";
             resetYLabel();
             ui->posContButton->setChecked(false);
@@ -330,7 +345,8 @@ void MainWindow::on_torContButton_clicked(bool checked)
 {
     if(discardChanges()){
         if (checked){
-            controlType = "torque";
+            controlMode = TORQUE_MODE;
+            sendControlMode();
             yPlotLabel = "tau (Nm)";
             resetYLabel();
             ui->posContButton->setChecked(false);
@@ -462,19 +478,19 @@ void MainWindow::saveGains()
     gainsHaveBeenChanged=false;
 }
 
-void MainWindow::on_partList_highlighted(int index)
-{
-    if(discardChanges())
-        qDebug()<<"highlighted";
-}
-
-
-
-void MainWindow::on_jointList_highlighted(int index)
-{
-    if(discardChanges())
-        qDebug()<<"highlighted";
-}
+// void MainWindow::on_partList_highlighted(int index)
+// {
+//     if(discardChanges())
+//         qDebug()<<"highlighted";
+// }
+//
+//
+//
+// void MainWindow::on_jointList_highlighted(int index)
+// {
+//     if(discardChanges())
+//         qDebug()<<"highlighted";
+// }
 
 
 bool MainWindow::getPidGains()
@@ -532,12 +548,17 @@ void MainWindow::sendPartAndJointIndexes()
     partAndJointIndexesBottle_out.clear();
     partAndJointIndexesBottle_out.addInt(partIndex);
     partAndJointIndexesBottle_out.addInt(jointIndex);
-    qDebug()<< "sent a message";
-
     robotPartAndJointBufPort_out.write();
-
 
     getPidGains();
 
 
+}
+
+void MainWindow::sendControlMode()
+{
+    Bottle& controlModeBottle_out = controlModeBufPort_out.prepare(); // Get a place to store things.
+    controlModeBottle_out.clear();
+    controlModeBottle_out.addInt(controlMode);
+    controlModeBufPort_out.write();
 }

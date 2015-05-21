@@ -25,7 +25,9 @@
 #include <boost/filesystem.hpp>
 
 #include <yarp/dev/ControlBoardInterfaces.h>
-
+#include <yarp/dev/ControlBoardPid.h>
+#include <yarp/dev/IVelocityControl2.h>
+#include <yarp/dev/ITorqueControl.h>
 #include <yarp/dev/IControlMode2.h>
 
 
@@ -47,6 +49,7 @@ class CtrlThread: public RateThread
         std::vector<IVelocityControl*>  iVel;
         std::vector<ITorqueControl*>    iTrq;
         std::vector<IControlLimits*>    iLims;
+        std::vector<IPidControl*>       iPids;
 
 
 
@@ -106,17 +109,25 @@ class CtrlThread: public RateThread
 
         bool isFinished();
 
+        double signalStartTime;
+        bool applyExcitationSignal;
+
     private:
-        double Kp, Kd, Ki;
+        double Kp_thread, Kd_thread, Ki_thread;
         void sendPidGains();
         void parseIncomingGains(Bottle *newGainMessage);
+        void parseIncomingControlMode(Bottle *newControlModeMessage);
         void updatePidInformation();
+        double excitationSignal(double triggerTime);
 
         BufferedPort<Bottle>    gainsBufPort_in; // incoming new gains
         Port                    gainsPort_out; // outgoing current gains
 
         BufferedPort<Bottle>    goToHomeBufPort_in; // incoming gotToHome Command
 
-        BufferedPort<Bottle>    robotPartAndJointBufPort_in;
+        BufferedPort<Bottle>    robotPartAndJointBufPort_in; //incoming part and joint index
+
+        BufferedPort<Bottle>    controlModeBufPort_in;
+
 
 };
