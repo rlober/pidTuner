@@ -96,6 +96,9 @@ private:
 
     yarp::os::BufferedPort<yarp::os::Bottle> controlModeBufPort_out;
 
+
+    yarp::os::Port                           dataPort_in;
+
 };
 
 #endif // MAINWINDOW_H

@@ -68,6 +68,9 @@ bool CtrlThread::threadInit()
     jointCommandsHaveBeenUpdated = false;
     controlThreadFinished = false;
     applyExcitationSignal = false;
+    dataReadyForDelivery = false;
+    iterationCounter = 0;
+    resizeDataVectors();
 
     reverseDirectrion = false;
     reversalCounter = 0;
@@ -81,6 +84,8 @@ bool CtrlThread::threadInit()
     robotPartAndJointBufPort_in.open("/pidTunerController/partAndJointIndexes/in");
 
     controlModeBufPort_in.open("/pidTunerController/controlMode/in");
+
+    dataPort_out.open("/pidTunerController/data/out");
 
     return true;
 
@@ -103,6 +108,7 @@ void CtrlThread::run()
     // Check if new gains have come in or if the user wants the current gains
     Bottle *gainsMessage = gainsBufPort_in.read(false);
     if (gainsMessage!=NULL) {
+        resizeDataVectors();
         parseIncomingGains(gainsMessage);
         sendPidGains();
     }
@@ -129,21 +135,31 @@ void CtrlThread::run()
     }
 
 
-    if (applyExcitationSignal) {
-        double signalOutput = excitationSignal(signalStartTime);
-        command[partIndex][jointIndex] = homeVectors[partIndex][jointIndex] + signalOutput;
-    }
-
-
-    if(jointCommandsHaveBeenUpdated || applyExcitationSignal)
+    bool runningTest = excitationSignal();
+    if(jointCommandsHaveBeenUpdated || runningTest)
     {
+        if (runningTest){
+            data_input[iterationCounter] = command[partIndex][jointIndex];
+
+
+        }
+
         sendJointCommands();
+
+        if (runningTest){
+            data_response[iterationCounter] = getJointResponse();
+
+
+            if(dataReadyForDelivery){
+                sendDataToGui();
+            }else{
+                iterationCounter++;
+            }
+        }
+
+        jointCommandsHaveBeenUpdated = false;
     }
 
-    // // Update encoders
-    // encs_LeftArm->getEncoders(encoders_LeftArm.data());
-    // encs_Head->getEncoders(encoders_Head.data());
-    // writeToPidLog();
 
 }
 
@@ -309,6 +325,7 @@ void CtrlThread::setCommandToHome()
         for (int jnt = 0; jnt < nJoints[rp]; jnt++)
         {
             command[rp][jnt] = homeVectors[rp][jnt];
+            std::cout << "Going to home configuration..." << std::endl;
         }
     }
     jointCommandsHaveBeenUpdated = true;
@@ -344,7 +361,7 @@ void CtrlThread::parseIncomingGains(Bottle *newGainMessage)
         std::cout<< "gains set to device:\nKp = "<< Kp_thread <<" Kd = "<< Kd_thread << " Ki = "<< Ki_thread <<"\n"<<std::endl;
 
 
-        signalStartTime = Time::now();
+        triggerTime = Time::now();
         applyExcitationSignal = true;
 
     }
@@ -472,39 +489,127 @@ bool CtrlThread::isFinished()
     return controlThreadFinished;
 }
 
-
-
-double CtrlThread::excitationSignal(double triggerTime)
+void CtrlThread::resizeDataVectors()
 {
-    double relativeT = triggerTime - Time::now();
-    double applyInputTime = 0.5;
-    double signalDuration = 1.0;
+    data_time.clear();
+    data_input.clear();
+    data_response.clear();
+
+    int storageSize = 200;
+    data_time.resize(storageSize);
+    data_input.resize(storageSize);
+    data_response.resize(storageSize);
+
+
+    iterationCounter = 0;
+
+    dataReadyForDelivery = false;
+
+}
+
+void CtrlThread::finalizeDataVectors()
+{
+    data_time.resize(iterationCounter);
+    data_input.resize(iterationCounter);
+    data_response.resize(iterationCounter);
+
+    dataReadyForDelivery = true;
+}
+
+bool CtrlThread::excitationSignal()
+{
 
 
 
-    if (isPositionMode) { // need to implement different signal types
-        double stepAmplitude = 5.5; //deg
-        if (relativeT<applyInputTime) {
-            return 0.0;
+    if (applyExcitationSignal)
+    { // need to implement different signal types
+        double relativeT = Time::now() - triggerTime;
+        double applyInputTime = 0.5;
+        double signalDuration = 1.5;
+
+
+
+        data_time[iterationCounter] = relativeT;
+
+        double stepAmplitude = 0.5; //deg
+        if (relativeT<applyInputTime)
+        {
+            command[partIndex][jointIndex] = homeVectors[partIndex][jointIndex];
+
+            return true;
         }
-        else if (relativeT>=applyInputTime && relativeT<(applyInputTime+signalDuration)) {
-            return stepAmplitude;
+        else if (relativeT>=applyInputTime && relativeT<(applyInputTime+signalDuration))
+        {
+            command[partIndex][jointIndex] = homeVectors[partIndex][jointIndex] + stepAmplitude;
+
+            return true;
         }
-        else if (relativeT>=(applyInputTime+signalDuration)){
+        else if (relativeT>=(applyInputTime+signalDuration))
+        {
+
+            command[partIndex][jointIndex] = homeVectors[partIndex][jointIndex];
+            finalizeDataVectors();
             applyExcitationSignal = false;
-            return 0.0;
+            return true;
         }
-    else
-    {
 
-        return 0.0;
+
     }
 
+    else
+    {
+        return false;
+    }
+}
 
+double CtrlThread::getJointResponse()
+{
+    if (isPositionMode)
+    {
+        while(!iEnc[partIndex]->getEncoders(encoders[partIndex].data()) )
+        {
+            Time::delay(0.001);
+        }
+        return encoders[partIndex][jointIndex];
     }
 }
 
 
+void CtrlThread::sendDataToGui()
+{
+    /*  To get a vector using yarp ports we have to use a little workaround basically
+        the data is saved in a yarp vector  then when we are ready to send each entry
+        is sent individually. The first value is an int (0 or 1) which indicates to
+        the receiver when to listen. 0 = stop listening and 1 = start. The size of the
+        vector is inferred from the number of messages sent with a first value of 1.
+    */
+    std::cout << "sending data" << std::endl;
+
+    for (int i=0; i<iterationCounter; i++)
+    {
+        Bottle dataBottle_out;
+        dataBottle_out.clear();
+
+        dataBottle_out.addInt(1);
+
+        dataBottle_out.addDouble(data_time[i]);
+        dataBottle_out.addDouble(data_input[i]);
+        dataBottle_out.addDouble(data_response[i]);
+
+        // dataBottle_out.addList().read(data_time);
+        // dataBottle_out.addList().read(data_input);
+        // dataBottle_out.addList().read(data_response);
+
+
+        dataPort_out.write(dataBottle_out);
+    }
+    Bottle dataBottle_out;
+    dataBottle_out.clear();
+    dataBottle_out.addInt(0);
+    dataPort_out.write(dataBottle_out);
+
+    std::cout << "data sent\n-----\n" << std::endl;
+}
 
 // double degChange = 1.0;
 //

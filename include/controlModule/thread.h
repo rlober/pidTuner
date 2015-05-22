@@ -109,8 +109,18 @@ class CtrlThread: public RateThread
 
         bool isFinished();
 
-        double signalStartTime;
         bool applyExcitationSignal;
+
+        double triggerTime, signalStartTime;
+
+        Vector data_time;
+        Vector data_input;
+        Vector data_response;
+
+        int iterationCounter;
+        bool dataReadyForDelivery;
+
+
 
     private:
         double Kp_thread, Kd_thread, Ki_thread;
@@ -118,7 +128,11 @@ class CtrlThread: public RateThread
         void parseIncomingGains(Bottle *newGainMessage);
         void parseIncomingControlMode(Bottle *newControlModeMessage);
         void updatePidInformation();
-        double excitationSignal(double triggerTime);
+        bool excitationSignal();
+        void resizeDataVectors();
+        double getJointResponse();
+        void finalizeDataVectors();
+        void sendDataToGui();
 
         BufferedPort<Bottle>    gainsBufPort_in; // incoming new gains
         Port                    gainsPort_out; // outgoing current gains
@@ -128,6 +142,8 @@ class CtrlThread: public RateThread
         BufferedPort<Bottle>    robotPartAndJointBufPort_in; //incoming part and joint index
 
         BufferedPort<Bottle>    controlModeBufPort_in;
+
+        Port                    dataPort_out;
 
 
 };

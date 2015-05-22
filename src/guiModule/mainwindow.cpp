@@ -1,6 +1,10 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <iostream>
+#include <yarp/sig/Vector.h>
+#include <yarp/math/Math.h>
+#include <cmath>
+
 
 #define POSITION_MODE 0
 #define VELOCITY_MODE 1
@@ -18,7 +22,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     controlMode = POSITION_MODE;
-    yPlotLabel = "y";
+
     isOnlyMajorJoints = true;
     gainsHaveBeenChanged = false;
     Kp_old=Kd_old=Ki_old=1.0;
@@ -34,6 +38,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     controlModeBufPort_out.open("/pidTunerGui/controlMode/out");
 
+    dataPort_in.open("/pidTunerGui/data/in");
+
     ///////////////////////////////////
     while(!yarp.connect("/pidTunerGui/gains/out", "/pidTunerController/gains/in") ){Time::delay(0.1);}
     while(!yarp.connect("/pidTunerController/gains/out", "/pidTunerGui/gains/in") ){Time::delay(0.1);}
@@ -44,9 +50,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
     while(!yarp.connect("/pidTunerGui/controlMode/out", "/pidTunerController/controlMode/in") ){Time::delay(0.1);}
 
+    while(!yarp.connect("/pidTunerController/data/out", "/pidTunerGui/data/in") ){Time::delay(0.1);}
+
     initFinished = false;
     ui->setupUi(this);
     initializeGui();
+    getPidGains();
     initFinished = true;
 
 }
@@ -64,7 +73,8 @@ void MainWindow::setCurrentPartAndJoint()
 
 void MainWindow::initializeGui()
 {
-    createPlot();
+
+
     addPartsToList();
 
     partIndex=ui->partList->count()-1;
@@ -72,10 +82,11 @@ void MainWindow::initializeGui()
     jointIndex = ui->jointList->count()-1;
     setCurrentPartAndJoint();
 
-    ui->posContButton->setChecked(true);
+    ui->posContButton->click();
     ui->statusInfoLabel->setText("ready");
 
-    getPidGains();
+    // getPidGains();
+    createPlot();
 
 
 }
@@ -89,11 +100,11 @@ void MainWindow::createPlot()
     ui->posPlot->addGraph();
     ui->posPlot->graph(1)->setName("Response");
     // give the axes some labels:
-    ui->posPlot->xAxis->setLabel("ms");
+    ui->posPlot->xAxis->setLabel("time (s)");
     ui->posPlot->yAxis->setLabel(yPlotLabel);
     // set axes ranges, so we see all data:
-    ui->posPlot->xAxis->setRange(-1, 1);
-    ui->posPlot->yAxis->setRange(0, 1);
+    // ui->posPlot->xAxis->setRange(-1, 1);
+    // ui->posPlot->yAxis->setRange(0, 1);
 
     QPen inputPen;
     inputPen.setColor(Qt::blue);
@@ -104,6 +115,14 @@ void MainWindow::createPlot()
     responsePen.setColor(Qt::red);
     responsePen.setWidthF(2);
     ui->posPlot->graph(1)->setPen(responsePen);
+
+    ui->posPlot->legend->setVisible(true);
+    QFont legendFont = font();  // start out with MainWindow's font..
+    legendFont.setPointSize(9); // and make a bit smaller for legend
+    ui->posPlot->legend->setFont(legendFont);
+    ui->posPlot->legend->setBrush(QBrush(QColor(255,255,255,230)));
+    // by default, the legend is in the inset layout of the main axis rect. So this is how we access it to change legend placement:
+    ui->posPlot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignBottom|Qt::AlignRight);
 
 }
 
@@ -120,16 +139,105 @@ void MainWindow::addPartsToList()
 void MainWindow::on_gainTestButton_clicked()
 {
     setPidGains();
-    // generate some data:
-    QVector<double> x(101), y(101); // initialize with entries 0..100
-    for (int i=0; i<101; ++i)
+    /*  To get a vector using yarp ports we have to use a little workaround basically
+        the data is saved in a yarp vector  then when we are ready to send each entry
+        is sent individually. The first value is an int (0 or 1) which indicates to
+        the receiver when to listen. 0 = stop listening and 1 = start. The size of the
+        vector is inferred from the number of messages sent with a first value of 1.
+    */
+
+    Bottle dataFromController;
+    yarp::sig::Vector y_Time, y_Input, y_Response;
+
+    int bufferLength = 1000;
+    y_Time.resize(bufferLength);
+    y_Input.resize(bufferLength);
+    y_Response.resize(bufferLength);
+
+
+    int vecLength=0;
+    bool waitingForData = true;
+    while(waitingForData)
     {
-      x[i] = i/50.0 - 1; // x goes from -1 to 1
-      y[i] = x[i]*x[i]; // let's plot a quadratic function
+        if(dataPort_in.read(dataFromController))
+        {
+            if(dataFromController.get(0).asInt())
+            {
+                y_Time[vecLength] = dataFromController.get(1).asDouble();
+                y_Input[vecLength] = dataFromController.get(2).asDouble();
+                y_Response[vecLength] = dataFromController.get(3).asDouble();
+                vecLength++;
+            }
+
+            else if(!dataFromController.get(0).asInt())
+            {
+                waitingForData = false;
+            }
+
+        }
+        Time::delay(0.001);
     }
-    ui->posPlot->graph(0)->setData(x, y);
-    ui->posPlot->graph(1)->setData(y, x);
+
+    // std::cout << "\n\n--------\nData received. Parsing "<< dataFromController.size()<<" items..." << std::endl;
+    // int vecLength = dataFromController.get(0).asInt();
+
+    y_Time.resize(vecLength);
+    y_Input.resize(vecLength);
+    y_Response.resize(vecLength);
+
+
+
+    std::cout << "\nData length = " << vecLength << std::endl;
+    // dataFromController.get(1).asList()->write(y_Time);
+    // dataFromController.get(2).asList()->write(y_Input);
+    // dataFromController.get(3).asList()->write(y_Response);
+
+
+
+    // std::cout << "received data_time: \n" << y_Time.toString().c_str() << std::endl;
+    // std::cout << "received data_input: \n" << y_Input.toString().c_str() << std::endl;
+    // std::cout << "received data_response: \n" << y_Response.toString().c_str() << std::endl;
+
+
+
+
+    std::cout << "Time size: "<< y_Time.size() << " Input size: "<< y_Input.size() <<" Response size: "<< y_Response.size() << std::endl;
+
+
+
+
+
+
+
+    std::cout << "\nConverting data from Yarp to Qt vectors" << std::endl;
+
+    QVector<double> q_Time(vecLength), q_Input(vecLength), q_Response(vecLength); // initialize with entries 0..100
+    for (int i=0; i<vecLength; i++)
+    {
+        q_Time[i]       = y_Time[i];
+        q_Input[i]      = y_Input[i];
+        q_Response[i]   = y_Response[i];
+    }
+
+
+    double maxTime, yMin, yMax;
+
+    maxTime = y_Time[vecLength-1];
+    yMin = ( yarp::math::findMin(y_Input) < yarp::math::findMin(y_Response) ? yarp::math::findMin(y_Input) : yarp::math::findMin(y_Response) );
+    yMax = ( yarp::math::findMax(y_Input) > yarp::math::findMax(y_Response) ? yarp::math::findMax(y_Input) : yarp::math::findMax(y_Response) );
+
+    double axisScale = std::abs( (std::abs(yMax) -std::abs(yMin)) *0.1);
+    yMin -= axisScale;
+    yMax += axisScale;
+
+    ui->posPlot->xAxis->setRange(0, maxTime);
+    ui->posPlot->yAxis->setRange(yMin, yMax);
+    ui->posPlot->graph(0)->setData(q_Time, q_Input);
+    ui->posPlot->graph(1)->setData(q_Time, q_Response);
+    resetYLabel();
     ui->posPlot->replot();
+
+    std::cout << "\nData plotted." << std::endl;
 
     gainsHaveBeenChanged = true;
 
