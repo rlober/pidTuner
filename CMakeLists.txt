@@ -22,6 +22,7 @@ find_package(Qt5PrintSupport REQUIRED)
 find_package(YARP)
 find_package(ICUB)
 find_package(Boost COMPONENTS system filesystem REQUIRED)
+find_package(TinyXML REQUIRED)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${YARP_MODULE_PATH})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ICUB_MODULE_PATH})
@@ -48,11 +49,12 @@ include_directories(${PROJECT_SOURCE_DIR}/include/controlModule
                     ${YARP_INCLUDE_DIRS}
                     ${Boost_INCLUDE_DIR}
                     ${Qt5Widgets_INCLUDE_DIRS}
-                    ${Qt5PrintSupport_INCLUDE_DIRS})
+                    ${Qt5PrintSupport_INCLUDE_DIRS}
+                    ${TinyXML_INCLUDE_DIRS})
 
 
 add_executable(${PROJECTNAME_CONTROLLER} ${controller_source} ${controller_header})
 target_link_libraries(${PROJECTNAME_CONTROLLER} ${YARP_LIBRARIES} ${Boost_LIBRARIES} Qt5::Widgets Qt5::PrintSupport icubmod )
 
 add_executable(${PROJECTNAME_GUI} ${gui_source} ${gui_header})
-target_link_libraries(${PROJECTNAME_GUI} Qt5::Widgets Qt5::PrintSupport ${YARP_LIBRARIES})
+target_link_libraries(${PROJECTNAME_GUI} Qt5::Widgets Qt5::PrintSupport ${YARP_LIBRARIES} ${TinyXML_LIBRARIES})

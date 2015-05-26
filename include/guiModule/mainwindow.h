@@ -9,6 +9,9 @@
 #include <yarp/os/Port.h>
 #include <yarp/os/all.h>
 
+#include <tinyxml.h>
+
+
 //
 // #include <yarp/os/RateThread.h>
 // #include <yarp/os/Time.h>
@@ -72,6 +75,9 @@ private:
     bool setPidGains();
     void sendPartAndJointIndexes();
     void sendControlMode();
+    void writeDataToLogs();
+    void createDataLogs();
+    const std::string currentDateTime();
 
     //Variables
     QString yPlotLabel;
@@ -98,6 +104,11 @@ private:
 
 
     yarp::os::Port                           dataPort_in;
+
+
+
+    std::string controlMode_string;
+    std::string logFilePath;
 
 };
 

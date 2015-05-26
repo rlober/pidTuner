@@ -1,9 +1,12 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include <iostream>
+
 #include <yarp/sig/Vector.h>
 #include <yarp/math/Math.h>
+
 #include <cmath>
+#include <iostream>
+
 
 
 #define POSITION_MODE 0
@@ -56,6 +59,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     initializeGui();
     getPidGains();
+    createDataLogs();
     initFinished = true;
 
 }
@@ -128,12 +132,12 @@ void MainWindow::createPlot()
 
 void MainWindow::addPartsToList()
 {
-    ui->partList->addItem("head");
-    ui->partList->addItem("torso");
-    ui->partList->addItem("left_arm");
-    ui->partList->addItem("right_arm");
-    ui->partList->addItem("left_leg");
-    ui->partList->addItem("right_leg");
+    ui->partList->addItem("0-head");
+    ui->partList->addItem("1-torso");
+    ui->partList->addItem("2-left_arm");
+    ui->partList->addItem("3-right_arm");
+    ui->partList->addItem("4-left_leg");
+    ui->partList->addItem("5-right_leg");
 }
 
 void MainWindow::on_gainTestButton_clicked()
@@ -257,80 +261,80 @@ void MainWindow::on_partList_currentIndexChanged(int partId)
     switch(partIndex)
     {
         case 0:
-            ui->jointList->addItem("0 - neck_pitch");
-            ui->jointList->addItem("1 - neck_roll");
-            ui->jointList->addItem("2 - neck_yaw");
+            ui->jointList->addItem("0-neck_pitch");
+            ui->jointList->addItem("1-neck_roll");
+            ui->jointList->addItem("2-neck_yaw");
             if(!isOnlyMajorJoints){
-            ui->jointList->addItem("3 - eyes_tilt");
-            ui->jointList->addItem("4 - eyes_version");
-            ui->jointList->addItem("5 - eyes_vergence");
+            ui->jointList->addItem("3-eyes_tilt");
+            ui->jointList->addItem("4-eyes_version");
+            ui->jointList->addItem("5-eyes_vergence");
             }
         break;
 
         case 1:
-            ui->jointList->addItem("0 - torso_yaw");
-            ui->jointList->addItem("1 - torso_roll");
-            ui->jointList->addItem("2 - torso_pitch");
+            ui->jointList->addItem("0-torso_yaw");
+            ui->jointList->addItem("1-torso_roll");
+            ui->jointList->addItem("2-torso_pitch");
         break;
 
         case 2:
-            ui->jointList->addItem("0 - l_shoulder_pitch");
-            ui->jointList->addItem("1 - l_shoulder_roll");
-            ui->jointList->addItem("2 - l_shoulder_yaw");
-            ui->jointList->addItem("3 - l_elbow");
-            ui->jointList->addItem("4 - l_wrist_prosup");
-            ui->jointList->addItem("5 - l_wrist_pitch");
-            ui->jointList->addItem("6 - l_wrist_yaw");
+            ui->jointList->addItem("0-l_shoulder_pitch");
+            ui->jointList->addItem("1-l_shoulder_roll");
+            ui->jointList->addItem("2-l_shoulder_yaw");
+            ui->jointList->addItem("3-l_elbow");
+            ui->jointList->addItem("4-l_wrist_prosup");
+            ui->jointList->addItem("5-l_wrist_pitch");
+            ui->jointList->addItem("6-l_wrist_yaw");
             if(!isOnlyMajorJoints){
-            ui->jointList->addItem("7 - l_hand_finger");
-            ui->jointList->addItem("8 - l_thumb_oppose");
-            ui->jointList->addItem("9 - l_thumb_proximal");
-            ui->jointList->addItem("10 - l_thumb_distal");
-            ui->jointList->addItem("11 - l_index_proximal");
-            ui->jointList->addItem("12 - l_index_distal");
-            ui->jointList->addItem("13 - l_middle_proximal");
-            ui->jointList->addItem("14 - l_middle_distal");
-            ui->jointList->addItem("15 - l_pinky");
+            ui->jointList->addItem("7-l_hand_finger");
+            ui->jointList->addItem("8-l_thumb_oppose");
+            ui->jointList->addItem("9-l_thumb_proximal");
+            ui->jointList->addItem("10-l_thumb_distal");
+            ui->jointList->addItem("11-l_index_proximal");
+            ui->jointList->addItem("12-l_index_distal");
+            ui->jointList->addItem("13-l_middle_proximal");
+            ui->jointList->addItem("14-l_middle_distal");
+            ui->jointList->addItem("15-l_pinky");
             }
         break;
 
         case 3:
-            ui->jointList->addItem("0 - r_shoulder_pitch");
-            ui->jointList->addItem("1 - r_shoulder_roll");
-            ui->jointList->addItem("2 - r_shoulder_yaw");
-            ui->jointList->addItem("3 - r_elbow");
-            ui->jointList->addItem("4 - r_wrist_prosup");
-            ui->jointList->addItem("5 - r_wrist_pitch");
-            ui->jointList->addItem("6 - r_wrist_yaw");
+            ui->jointList->addItem("0-r_shoulder_pitch");
+            ui->jointList->addItem("1-r_shoulder_roll");
+            ui->jointList->addItem("2-r_shoulder_yaw");
+            ui->jointList->addItem("3-r_elbow");
+            ui->jointList->addItem("4-r_wrist_prosup");
+            ui->jointList->addItem("5-r_wrist_pitch");
+            ui->jointList->addItem("6-r_wrist_yaw");
             if(!isOnlyMajorJoints){
-            ui->jointList->addItem("7 - r_hand_finger");
-            ui->jointList->addItem("8 - r_thumb_oppose");
-            ui->jointList->addItem("9 - r_thumb_proximal");
-            ui->jointList->addItem("10 - r_thumb_distal");
-            ui->jointList->addItem("11 - r_index_proximal");
-            ui->jointList->addItem("12 - r_index_distal");
-            ui->jointList->addItem("13 - r_middle_proximal");
-            ui->jointList->addItem("14 - r_middle_distal");
-            ui->jointList->addItem("15 - r_pinky");
+            ui->jointList->addItem("7-r_hand_finger");
+            ui->jointList->addItem("8-r_thumb_oppose");
+            ui->jointList->addItem("9-r_thumb_proximal");
+            ui->jointList->addItem("10-r_thumb_distal");
+            ui->jointList->addItem("11-r_index_proximal");
+            ui->jointList->addItem("12-r_index_distal");
+            ui->jointList->addItem("13-r_middle_proximal");
+            ui->jointList->addItem("14-r_middle_distal");
+            ui->jointList->addItem("15-r_pinky");
             }
         break;
 
         case 4:
-            ui->jointList->addItem("0 - l_hip_pitch");
-            ui->jointList->addItem("1 - l_hip_roll");
-            ui->jointList->addItem("2 - l_hip_yaw");
-            ui->jointList->addItem("3 - l_knee");
-            ui->jointList->addItem("4 - l_ankle_pitch");
-            ui->jointList->addItem("5 - l_ankle_roll");
+            ui->jointList->addItem("0-l_hip_pitch");
+            ui->jointList->addItem("1-l_hip_roll");
+            ui->jointList->addItem("2-l_hip_yaw");
+            ui->jointList->addItem("3-l_knee");
+            ui->jointList->addItem("4-l_ankle_pitch");
+            ui->jointList->addItem("5-l_ankle_roll");
         break;
 
         case 5:
-            ui->jointList->addItem("0 - r_hip_pitch");
-            ui->jointList->addItem("1 - r_hip_roll");
-            ui->jointList->addItem("2 - r_hip_yaw");
-            ui->jointList->addItem("3 - r_knee");
-            ui->jointList->addItem("4 - r_ankle_pitch");
-            ui->jointList->addItem("5 - r_ankle_roll");
+            ui->jointList->addItem("0-r_hip_pitch");
+            ui->jointList->addItem("1-r_hip_roll");
+            ui->jointList->addItem("2-r_hip_yaw");
+            ui->jointList->addItem("3-r_knee");
+            ui->jointList->addItem("4-r_ankle_pitch");
+            ui->jointList->addItem("5-r_ankle_roll");
         break;
     }
 
@@ -422,6 +426,7 @@ void MainWindow::on_posContButton_clicked(bool checked)
     if(discardChanges()){
         if (checked){
             controlMode = POSITION_MODE;
+            controlMode_string = "position";
             sendControlMode();
             yPlotLabel = "q (deg)";
             resetYLabel();
@@ -437,6 +442,7 @@ void MainWindow::on_velContButton_clicked(bool checked)
     if(discardChanges()){
         if (checked){
             controlMode = VELOCITY_MODE;
+            controlMode_string = "velocity";
             sendControlMode();
             yPlotLabel = "dq (deg/sec)";
             resetYLabel();
@@ -454,6 +460,7 @@ void MainWindow::on_torContButton_clicked(bool checked)
     if(discardChanges()){
         if (checked){
             controlMode = TORQUE_MODE;
+            controlMode_string = "torque";
             sendControlMode();
             yPlotLabel = "tau (Nm)";
             resetYLabel();
@@ -557,21 +564,17 @@ bool MainWindow::discardChanges()
 
         switch (ret) {
           case QMessageBox::Save:
-              qDebug()<<"save dat shit";
               saveGains();
               return false;
               break;
           case QMessageBox::Discard:
-              qDebug()<<"discard dat shit";
               gainsHaveBeenChanged=false;
               return true;
               break;
           case QMessageBox::Cancel:
-              qDebug()<<"cancel dat shit";
               return false;
               break;
           default:
-              qDebug()<<"what da fuck";
               return false;
               break;
         }
@@ -582,23 +585,10 @@ bool MainWindow::discardChanges()
 
 void MainWindow::saveGains()
 {
+    writeDataToLogs();
     qDebug()<<"saved";
     gainsHaveBeenChanged=false;
 }
-
-// void MainWindow::on_partList_highlighted(int index)
-// {
-//     if(discardChanges())
-//         qDebug()<<"highlighted";
-// }
-//
-//
-//
-// void MainWindow::on_jointList_highlighted(int index)
-// {
-//     if(discardChanges())
-//         qDebug()<<"highlighted";
-// }
 
 
 bool MainWindow::getPidGains()
@@ -669,4 +659,155 @@ void MainWindow::sendControlMode()
     controlModeBottle_out.clear();
     controlModeBottle_out.addInt(controlMode);
     controlModeBufPort_out.write();
+}
+
+
+
+/*
+
+<?xml version="1.0" ?>
+
+<!--
+pidTuner Data Log
+Last Updated: currentDateTime
+-->
+
+<part name="00-head">
+    <joint name="00-neck_pitch">
+        <mode name="position"   kp="Kp_new" kd="Kd_new" ki="Ki_new"></mode>
+        <mode name="velocity"   kp="Kp_new" kd="Kd_new" ki="Ki_new"></mode>
+        <mode name="torque"     kp="Kp_new" kd="Kd_new" ki="Ki_new"></mode>
+    </joint>
+</part>
+
+
+*/
+
+
+
+
+
+void MainWindow::createDataLogs()
+{
+    logFilePath = "pidTunerLog.xml";
+
+
+    std::string updateComment = "\npidTuner Data Log\nLast Updated: " + currentDateTime()+ "\n";
+    TiXmlDocument pidGainsLog;
+	bool loadOkay = pidGainsLog.LoadFile(logFilePath.c_str());
+	if (!loadOkay)
+	{
+        std::cout << "Generating a new PID log file." << std::endl;
+        TiXmlDeclaration* decl = new TiXmlDeclaration( "1.0", "", "" );
+        pidGainsLog.LinkEndChild( decl );
+
+        TiXmlComment* comment = new TiXmlComment();
+    	comment->SetValue(updateComment.c_str());
+        pidGainsLog.LinkEndChild( comment );
+    }
+    else
+    {
+        std::cout << "Modifying: " + logFilePath << std::endl;
+        for ( TiXmlNode* pChild = pidGainsLog.FirstChild(); pChild != 0; pChild = pChild->NextSibling())
+    	{
+            int TINYXML_COMMENT = 2;
+    		if (pChild->Type() == TINYXML_COMMENT) {
+                pChild->SetValue(updateComment.c_str());
+    		}
+    	}
+    }
+
+    pidGainsLog.SaveFile( logFilePath.c_str() );
+}
+
+void MainWindow::writeDataToLogs()
+{
+    TiXmlDocument pidGainsLog;
+	bool loadOkay = pidGainsLog.LoadFile(logFilePath.c_str());
+
+
+	if (loadOkay)
+	{
+        TiXmlElement * xml_part;
+        TiXmlElement * xml_joint;
+        TiXmlElement * xml_mode;
+
+        bool partExists, jointExists, modeExists;
+        partExists = jointExists = modeExists = false;
+
+
+        for(TiXmlElement* partElem = pidGainsLog.FirstChildElement("part"); partElem != NULL; partElem = partElem->NextSiblingElement("part"))
+        {
+            if (partElem->Attribute("name") == ui->partList->currentText().toStdString())
+            {
+                partExists = true;
+                xml_part = partElem;
+
+                for(TiXmlElement* jointElem = partElem->FirstChildElement("joint"); jointElem != NULL; jointElem = jointElem->NextSiblingElement("joint"))
+                {
+                    if (jointElem->Attribute("name") == ui->jointList->currentText().toStdString())
+                    {
+                        jointExists = true;
+                        xml_joint = jointElem;
+
+                        for(TiXmlElement* modeElem = jointElem->FirstChildElement("mode"); modeElem != NULL; modeElem = modeElem->NextSiblingElement("mode"))
+                        {
+                            if (modeElem->Attribute("name") == controlMode_string)
+                            {
+                                modeExists = true;
+                                xml_mode = modeElem;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+
+        if(!partExists)
+        {
+            xml_part = new TiXmlElement( "part" );
+            pidGainsLog.LinkEndChild( xml_part );
+            xml_part->SetAttribute("name", ui->partList->currentText().toStdString().c_str());
+        }
+
+
+        if(!jointExists)
+        {
+            xml_joint = new TiXmlElement( "joint" );
+            xml_part->LinkEndChild( xml_joint );
+            xml_joint->SetAttribute("name", ui->jointList->currentText().toStdString().c_str());
+        }
+
+
+
+        if(!modeExists)
+        {
+            xml_mode = new TiXmlElement( "mode" );
+            xml_joint->LinkEndChild( xml_mode );
+            xml_mode->SetAttribute("name", controlMode_string.c_str());
+        }
+
+        xml_mode->SetDoubleAttribute("Kp", Kp_new);
+        xml_mode->SetDoubleAttribute("Kd", Kd_new);
+        xml_mode->SetDoubleAttribute("Ki", Ki_new);
+
+        pidGainsLog.SaveFile( logFilePath.c_str() );
+
+    }
+    else{
+        std::cout << "Couldn't find any existing log file... Ohhhhhhhhhhhhhhhhhhhhhhhh Shit!!!!! It hurts!! KILL ME!!!!" << std::endl;
+    }
+
+}
+
+const std::string MainWindow::currentDateTime()
+{
+    time_t     now = time(0);
+    struct tm  tstruct;
+    char       buf[80];
+    tstruct = *localtime(&now);
+    strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
+    return buf;
 }
