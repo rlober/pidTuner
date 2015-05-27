@@ -38,8 +38,9 @@ public:
     QWidget *centralWidget;
     QGridLayout *gridLayout;
     QCustomPlot *posPlot;
-    QSpacerItem *verticalSpacer_3;
     QVBoxLayout *contModeLayout;
+    QPushButton *resetSignalPropButton;
+    QSpacerItem *verticalSpacer_7;
     QLabel *contModeLabel;
     QHBoxLayout *contModeButtonLayout;
     QPushButton *posContButton;
@@ -49,6 +50,8 @@ public:
     QHBoxLayout *statusLayout;
     QLabel *statusLabel;
     QLabel *statusInfoLabel;
+    QSpacerItem *horizontalSpacer;
+    QPushButton *savePlotButton;
     QSpacerItem *verticalSpacer;
     QHBoxLayout *closeHomeLayout;
     QSpacerItem *closeSpacer;
@@ -85,6 +88,24 @@ public:
     QSpacerItem *verticalSpacer_5;
     QPushButton *saveGainsButton;
     QSpacerItem *verticalSpacer_4;
+    QVBoxLayout *verticalLayout_4;
+    QLabel *signalLabel;
+    QHBoxLayout *horizontalLayout_5;
+    QVBoxLayout *verticalLayout_2;
+    QHBoxLayout *horizontalLayout;
+    QLabel *typeLabel;
+    QComboBox *signalTypeComboBox;
+    QHBoxLayout *horizontalLayout_2;
+    QLabel *startTimeLabel;
+    QLineEdit *startTime_in;
+    QVBoxLayout *verticalLayout_3;
+    QHBoxLayout *horizontalLayout_4;
+    QLabel *amplitudeLabel;
+    QLineEdit *amplitude_in;
+    QHBoxLayout *horizontalLayout_3;
+    QLabel *durationLabel;
+    QLineEdit *duration_in;
+    QSpacerItem *verticalSpacer_3;
     QMenuBar *menuBar;
     QMenu *menuPID_Tuner;
     QToolBar *mainToolBar;
@@ -104,15 +125,20 @@ public:
         posPlot = new QCustomPlot(centralWidget);
         posPlot->setObjectName(QStringLiteral("posPlot"));
 
-        gridLayout->addWidget(posPlot, 0, 1, 5, 1);
-
-        verticalSpacer_3 = new QSpacerItem(20, 80, QSizePolicy::Minimum, QSizePolicy::Maximum);
-
-        gridLayout->addItem(verticalSpacer_3, 1, 0, 1, 1);
+        gridLayout->addWidget(posPlot, 0, 1, 6, 1);
 
         contModeLayout = new QVBoxLayout();
         contModeLayout->setSpacing(6);
         contModeLayout->setObjectName(QStringLiteral("contModeLayout"));
+        resetSignalPropButton = new QPushButton(centralWidget);
+        resetSignalPropButton->setObjectName(QStringLiteral("resetSignalPropButton"));
+
+        contModeLayout->addWidget(resetSignalPropButton);
+
+        verticalSpacer_7 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        contModeLayout->addItem(verticalSpacer_7);
+
         contModeLabel = new QLabel(centralWidget);
         contModeLabel->setObjectName(QStringLiteral("contModeLabel"));
         QFont font;
@@ -147,7 +173,7 @@ public:
         contModeLayout->addLayout(contModeButtonLayout);
 
 
-        gridLayout->addLayout(contModeLayout, 2, 0, 1, 1);
+        gridLayout->addLayout(contModeLayout, 3, 0, 1, 1);
 
         verticalLayout = new QVBoxLayout();
         verticalLayout->setSpacing(6);
@@ -173,6 +199,15 @@ public:
         statusInfoLabel->setAlignment(Qt::AlignCenter);
 
         statusLayout->addWidget(statusInfoLabel);
+
+        horizontalSpacer = new QSpacerItem(30, 20, QSizePolicy::Preferred, QSizePolicy::Minimum);
+
+        statusLayout->addItem(horizontalSpacer);
+
+        savePlotButton = new QPushButton(centralWidget);
+        savePlotButton->setObjectName(QStringLiteral("savePlotButton"));
+
+        statusLayout->addWidget(savePlotButton);
 
 
         verticalLayout->addLayout(statusLayout);
@@ -206,11 +241,11 @@ public:
         verticalLayout->addLayout(closeHomeLayout);
 
 
-        gridLayout->addLayout(verticalLayout, 6, 1, 1, 1);
+        gridLayout->addLayout(verticalLayout, 7, 1, 1, 1);
 
         verticalSpacer_2 = new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Maximum);
 
-        gridLayout->addItem(verticalSpacer_2, 5, 1, 1, 1);
+        gridLayout->addItem(verticalSpacer_2, 6, 1, 1, 1);
 
         jointSelectorLayout_2 = new QVBoxLayout();
         jointSelectorLayout_2->setSpacing(6);
@@ -370,16 +405,122 @@ public:
         gainsLayout->addWidget(saveGainsButton, 0, Qt::AlignHCenter|Qt::AlignVCenter);
 
 
-        gridLayout->addLayout(gainsLayout, 4, 0, 3, 1);
+        gridLayout->addLayout(gainsLayout, 5, 0, 3, 1);
 
         verticalSpacer_4 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Maximum);
 
-        gridLayout->addItem(verticalSpacer_4, 3, 0, 1, 1);
+        gridLayout->addItem(verticalSpacer_4, 4, 0, 1, 1);
+
+        verticalLayout_4 = new QVBoxLayout();
+        verticalLayout_4->setSpacing(6);
+        verticalLayout_4->setObjectName(QStringLiteral("verticalLayout_4"));
+        signalLabel = new QLabel(centralWidget);
+        signalLabel->setObjectName(QStringLiteral("signalLabel"));
+        signalLabel->setFont(font);
+        signalLabel->setAlignment(Qt::AlignCenter);
+
+        verticalLayout_4->addWidget(signalLabel);
+
+        horizontalLayout_5 = new QHBoxLayout();
+        horizontalLayout_5->setSpacing(6);
+        horizontalLayout_5->setObjectName(QStringLiteral("horizontalLayout_5"));
+        verticalLayout_2 = new QVBoxLayout();
+        verticalLayout_2->setSpacing(6);
+        verticalLayout_2->setObjectName(QStringLiteral("verticalLayout_2"));
+        horizontalLayout = new QHBoxLayout();
+        horizontalLayout->setSpacing(6);
+        horizontalLayout->setObjectName(QStringLiteral("horizontalLayout"));
+        typeLabel = new QLabel(centralWidget);
+        typeLabel->setObjectName(QStringLiteral("typeLabel"));
+
+        horizontalLayout->addWidget(typeLabel);
+
+        signalTypeComboBox = new QComboBox(centralWidget);
+        signalTypeComboBox->setObjectName(QStringLiteral("signalTypeComboBox"));
+        QSizePolicy sizePolicy1(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
+        sizePolicy1.setHorizontalStretch(0);
+        sizePolicy1.setVerticalStretch(0);
+        sizePolicy1.setHeightForWidth(signalTypeComboBox->sizePolicy().hasHeightForWidth());
+        signalTypeComboBox->setSizePolicy(sizePolicy1);
+        signalTypeComboBox->setMinimumSize(QSize(130, 0));
+
+        horizontalLayout->addWidget(signalTypeComboBox);
+
+
+        verticalLayout_2->addLayout(horizontalLayout);
+
+        horizontalLayout_2 = new QHBoxLayout();
+        horizontalLayout_2->setSpacing(6);
+        horizontalLayout_2->setObjectName(QStringLiteral("horizontalLayout_2"));
+        startTimeLabel = new QLabel(centralWidget);
+        startTimeLabel->setObjectName(QStringLiteral("startTimeLabel"));
+
+        horizontalLayout_2->addWidget(startTimeLabel);
+
+        startTime_in = new QLineEdit(centralWidget);
+        startTime_in->setObjectName(QStringLiteral("startTime_in"));
+        sizePolicy1.setHeightForWidth(startTime_in->sizePolicy().hasHeightForWidth());
+        startTime_in->setSizePolicy(sizePolicy1);
+        startTime_in->setMinimumSize(QSize(130, 0));
+
+        horizontalLayout_2->addWidget(startTime_in);
+
+
+        verticalLayout_2->addLayout(horizontalLayout_2);
+
+
+        horizontalLayout_5->addLayout(verticalLayout_2);
+
+        verticalLayout_3 = new QVBoxLayout();
+        verticalLayout_3->setSpacing(6);
+        verticalLayout_3->setObjectName(QStringLiteral("verticalLayout_3"));
+        horizontalLayout_4 = new QHBoxLayout();
+        horizontalLayout_4->setSpacing(6);
+        horizontalLayout_4->setObjectName(QStringLiteral("horizontalLayout_4"));
+        amplitudeLabel = new QLabel(centralWidget);
+        amplitudeLabel->setObjectName(QStringLiteral("amplitudeLabel"));
+
+        horizontalLayout_4->addWidget(amplitudeLabel);
+
+        amplitude_in = new QLineEdit(centralWidget);
+        amplitude_in->setObjectName(QStringLiteral("amplitude_in"));
+
+        horizontalLayout_4->addWidget(amplitude_in);
+
+
+        verticalLayout_3->addLayout(horizontalLayout_4);
+
+        horizontalLayout_3 = new QHBoxLayout();
+        horizontalLayout_3->setSpacing(6);
+        horizontalLayout_3->setObjectName(QStringLiteral("horizontalLayout_3"));
+        durationLabel = new QLabel(centralWidget);
+        durationLabel->setObjectName(QStringLiteral("durationLabel"));
+
+        horizontalLayout_3->addWidget(durationLabel);
+
+        duration_in = new QLineEdit(centralWidget);
+        duration_in->setObjectName(QStringLiteral("duration_in"));
+
+        horizontalLayout_3->addWidget(duration_in);
+
+
+        verticalLayout_3->addLayout(horizontalLayout_3);
+
+
+        horizontalLayout_5->addLayout(verticalLayout_3);
+
+
+        verticalLayout_4->addLayout(horizontalLayout_5);
+
+
+        gridLayout->addLayout(verticalLayout_4, 2, 0, 1, 1);
+
+        verticalSpacer_3 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        gridLayout->addItem(verticalSpacer_3, 1, 0, 1, 1);
 
         MainWindow->setCentralWidget(centralWidget);
         posPlot->raise();
-        statusLabel->raise();
-        statusInfoLabel->raise();
         menuBar = new QMenuBar(MainWindow);
         menuBar->setObjectName(QStringLiteral("menuBar"));
         menuBar->setGeometry(QRect(0, 0, 1161, 25));
@@ -392,6 +533,20 @@ public:
         statusBar = new QStatusBar(MainWindow);
         statusBar->setObjectName(QStringLiteral("statusBar"));
         MainWindow->setStatusBar(statusBar);
+        QWidget::setTabOrder(kp_in, kd_in);
+        QWidget::setTabOrder(kd_in, ki_in);
+        QWidget::setTabOrder(ki_in, gainTestButton);
+        QWidget::setTabOrder(gainTestButton, gainResetButton);
+        QWidget::setTabOrder(gainResetButton, saveGainsButton);
+        QWidget::setTabOrder(saveGainsButton, closeButton);
+        QWidget::setTabOrder(closeButton, homeButton);
+        QWidget::setTabOrder(homeButton, partList);
+        QWidget::setTabOrder(partList, jointList);
+        QWidget::setTabOrder(jointList, previousJointButton);
+        QWidget::setTabOrder(previousJointButton, nextJointButton);
+        QWidget::setTabOrder(nextJointButton, posContButton);
+        QWidget::setTabOrder(posContButton, velContButton);
+        QWidget::setTabOrder(velContButton, torContButton);
 
         menuBar->addAction(menuPID_Tuner->menuAction());
 
@@ -403,12 +558,14 @@ public:
     void retranslateUi(QMainWindow *MainWindow)
     {
         MainWindow->setWindowTitle(QApplication::translate("MainWindow", "MainWindow", 0));
+        resetSignalPropButton->setText(QApplication::translate("MainWindow", "Reset Signal Properties to Defaults", 0));
         contModeLabel->setText(QApplication::translate("MainWindow", "Control Mode", 0));
         posContButton->setText(QApplication::translate("MainWindow", "Position", 0));
         velContButton->setText(QApplication::translate("MainWindow", "Velocity", 0));
         torContButton->setText(QApplication::translate("MainWindow", "Torque", 0));
         statusLabel->setText(QApplication::translate("MainWindow", "Status:", 0));
         statusInfoLabel->setText(QApplication::translate("MainWindow", "status_info", 0));
+        savePlotButton->setText(QApplication::translate("MainWindow", "Save Plot", 0));
         closeButton->setText(QApplication::translate("MainWindow", "Close", 0));
         homeButton->setText(QApplication::translate("MainWindow", "Go To Home", 0));
         partLabel->setText(QApplication::translate("MainWindow", "Robot Part", 0));
@@ -421,6 +578,19 @@ public:
         gainTestButton->setText(QApplication::translate("MainWindow", "Test Gains", 0));
         gainResetButton->setText(QApplication::translate("MainWindow", "Reset Gains", 0));
         saveGainsButton->setText(QApplication::translate("MainWindow", "Save Gains", 0));
+        signalLabel->setText(QApplication::translate("MainWindow", "Excitation Signal", 0));
+        typeLabel->setText(QApplication::translate("MainWindow", "Type", 0));
+        signalTypeComboBox->clear();
+        signalTypeComboBox->insertItems(0, QStringList()
+         << QApplication::translate("MainWindow", "Step", 0)
+         << QApplication::translate("MainWindow", "Sign", 0)
+         << QApplication::translate("MainWindow", "Triangle", 0)
+         << QApplication::translate("MainWindow", "Square", 0)
+         << QApplication::translate("MainWindow", "Dirac", 0)
+        );
+        startTimeLabel->setText(QApplication::translate("MainWindow", "Start Time", 0));
+        amplitudeLabel->setText(QApplication::translate("MainWindow", "Step Amplitude", 0));
+        durationLabel->setText(QApplication::translate("MainWindow", "Duration", 0));
         menuPID_Tuner->setTitle(QApplication::translate("MainWindow", "PID Tuner", 0));
     } // retranslateUi
 

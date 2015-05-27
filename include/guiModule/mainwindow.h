@@ -11,6 +11,8 @@
 
 #include <tinyxml.h>
 
+#include "qcustomplot.h"
+
 
 //
 // #include <yarp/os/RateThread.h>
@@ -58,6 +60,12 @@ private slots:
     // void on_partList_highlighted(int index);
     // void on_jointList_highlighted(int index);
 
+    void on_amplitude_in_editingFinished();
+    void on_duration_in_editingFinished();
+    void on_startTime_in_editingFinished();
+    void on_resetSignalPropButton_clicked();
+    void on_savePlotButton_clicked();
+
 private:
     Ui::MainWindow *ui;
 
@@ -78,9 +86,14 @@ private:
     void writeDataToLogs();
     void createDataLogs();
     const std::string currentDateTime();
+    void sendExcitationSignalProperties();
+    void updateSignalPropertiesInGui();
+    void setSignalPropertiesToDefaults();
 
     //Variables
     QString yPlotLabel;
+    QCPPlotTitle* plotTitle;
+
     bool isOnlyMajorJoints, gainsHaveBeenChanged;
     int controlMode, partIndex, jointIndex;
 
@@ -89,6 +102,10 @@ private:
 
     double Kp_new, Kd_new, Ki_new;
     double Kp_old, Kd_old, Ki_old;
+
+    double signalAmplitude, signalAmplitude_POS, signalAmplitude_VEL, signalAmplitude_TOR, signalAmplitude_POS_DEFAULT, signalAmplitude_VEL_DEFAULT, signalAmplitude_TOR_DEFAULT;
+    double signalStartTime, signalStartTime_POS, signalStartTime_VEL, signalStartTime_TOR, signalStartTime_POS_DEFAULT, signalStartTime_VEL_DEFAULT, signalStartTime_TOR_DEFAULT;
+    double signalDuration,  signalDuration_POS,  signalDuration_VEL,  signalDuration_TOR,  signalDuration_POS_DEFAULT,  signalDuration_VEL_DEFAULT,  signalDuration_TOR_DEFAULT;
 
     yarp::os::Network yarp;
 
@@ -105,6 +122,7 @@ private:
 
     yarp::os::Port                           dataPort_in;
 
+    yarp::os::BufferedPort<yarp::os::Bottle> signalPropertiesBufPort_out;
 
 
     std::string controlMode_string;

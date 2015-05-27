@@ -8,6 +8,12 @@
 #define VELOCITY_MODE 1
 #define TORQUE_MODE 2
 
+#define SIG_STEP 0
+#define SIG_SIGN 1
+#define SIG_TRIANGLE 2
+#define SIG_SQUARE 3
+#define SIG_DIRAC 4
+
 
 
 CtrlThread::CtrlThread(const double period) : RateThread(int(period*1000.0))
@@ -22,7 +28,7 @@ bool CtrlThread::threadInit()
     robotName = "icubGazeboSim";
     extension = ".txt";
     baseFilePath = "/home/ryan/Desktop/";
-    // createPidLog();
+
 
     isPositionMode  = true;
     isVelocityMode  = false;
@@ -49,6 +55,7 @@ bool CtrlThread::threadInit()
     iTrq.resize(numRobotParts);
     iLims.resize(numRobotParts);
     iPids.resize(numRobotParts);
+    iCtrl.resize(numRobotParts);
 
 
     encoders.resize(numRobotParts);
@@ -60,10 +67,7 @@ bool CtrlThread::threadInit()
 
     openInterfaces();
 
-    for (int i=0; i<numRobotParts; i++)
-    {
-        std::cout << homeVectors[i].toString().c_str() << std::endl;
-    }
+    goToHome();
 
     jointCommandsHaveBeenUpdated = false;
     controlThreadFinished = false;
@@ -72,8 +76,7 @@ bool CtrlThread::threadInit()
     iterationCounter = 0;
     resizeDataVectors();
 
-    reverseDirectrion = false;
-    reversalCounter = 0;
+
 
     //Open yarp ports
     gainsBufPort_in.open("/pidTunerController/gains/in");
@@ -86,6 +89,8 @@ bool CtrlThread::threadInit()
     controlModeBufPort_in.open("/pidTunerController/controlMode/in");
 
     dataPort_out.open("/pidTunerController/data/out");
+
+    signalPropertiesBufPort_in.open("/pidTunerController/signalProperties/in");
 
     return true;
 
@@ -117,7 +122,8 @@ void CtrlThread::run()
     Bottle *goToHomeMessage = goToHomeBufPort_in.read(false);
     if (goToHomeMessage!=NULL) {
         if(goToHomeMessage->get(0).asInt()==1){
-            setCommandToHome();
+            // setCommandToHome();
+            goToHome();
         }
     }
 
@@ -134,17 +140,22 @@ void CtrlThread::run()
         updatePidInformation();
     }
 
+    Bottle *signalPropertiesMessage = signalPropertiesBufPort_in.read(false);
+    if (signalPropertiesMessage!=NULL) {
+        parseIncomingSignalProperties(signalPropertiesMessage);
+    }
 
-    bool runningTest = excitationSignal();
+    double cmd;
+    bool runningTest = excitationSignal(cmd);
     if(jointCommandsHaveBeenUpdated || runningTest)
     {
         if (runningTest){
-            data_input[iterationCounter] = command[partIndex][jointIndex];
-
+            // data_input[iterationCounter] = command[partIndex][jointIndex];
+            data_input[iterationCounter] = cmd;
 
         }
 
-        sendJointCommands();
+        sendJointCommand(cmd);
 
         if (runningTest){
             data_response[iterationCounter] = getJointResponse();
@@ -152,6 +163,7 @@ void CtrlThread::run()
 
             if(dataReadyForDelivery){
                 sendDataToGui();
+                goToHome();
             }else{
                 iterationCounter++;
             }
@@ -217,6 +229,7 @@ bool CtrlThread::openInterfaces()
         ok = ok && robotDevice[rp]->view(iTrq[rp]);
         ok = ok && robotDevice[rp]->view(iLims[rp]);
         ok = ok && robotDevice[rp]->view(iPids[rp]);
+        ok = ok && robotDevice[rp]->view(iCtrl[rp]);
 
 
 
@@ -237,6 +250,7 @@ bool CtrlThread::openInterfaces()
 
         jointLimitsLower[rp].resize(nJoints[rp]);
         jointLimitsUpper[rp].resize(nJoints[rp]);
+        homeVectors[rp].resize(nJoints[rp]);
 
 
         for (int i = 0; i < nJoints[rp]; i++) {
@@ -247,20 +261,29 @@ bool CtrlThread::openInterfaces()
 
         for (int i = 0; i < nJoints[rp]; i++) {
             tmp[rp][i] = 10.0;
+            homeVectors[rp][i] = 0.0;
             iPos[rp]->setRefSpeed(i, tmp[rp][i]);
         }
 
-        homeVectors[rp].resize(nJoints[rp]);
-
-        while(!iEnc[rp]->getEncoders(homeVectors[rp].data()) )
-        {
-            Time::delay(0.01);
+        if (rp==2 || rp==3) {
+            homeVectors[rp][0] = -25.0;
+            homeVectors[rp][1] = 20.0;
+            homeVectors[rp][3] = 50.0;
         }
+
+
+
+        // while(!iEnc[rp]->getEncoders(homeVectors[rp].data()) )
+        // {
+        //     Time::delay(0.01);
+        // }
 
         while(!iEnc[rp]->getEncoders(command[rp].data()))
         {
             Time::delay(0.01);
         }
+
+
 
 
 
@@ -271,10 +294,15 @@ bool CtrlThread::openInterfaces()
 
 bool CtrlThread::goToHome()
 {
-    std::cout<<"\n\tMoving to home position.\n\n\n";
+    std::cout<<"\nMoving to home position.\n";
+
+
     for (int rp=0; rp<numRobotParts; rp++)
     {
-        // std::string curRobPart = robotParts[rp];
+        for (int jnt = 0; jnt < nJoints[rp]; jnt++)
+        {
+            iCtrl[rp]->setControlMode(jnt, VOCAB_CM_POSITION);
+        }
 
         iPos[rp]->positionMove(homeVectors[rp].data());
     }
@@ -289,11 +317,13 @@ bool CtrlThread::goToHome()
         }
 
     }
+    std::cout << "Finished." << std::endl;
     return true;
 }
 
-bool CtrlThread::sendJointCommands()
+bool CtrlThread::sendJointCommand(double cmd)
 {
+/*
     for (int rp=0; rp<numRobotParts; rp++)
     {
         if (isPositionMode)
@@ -303,7 +333,7 @@ bool CtrlThread::sendJointCommands()
 
         else if (isVelocityMode)
         {
-            //
+            iVel[rp]->velocityMove(command_velocity.data());
         }
 
         else if (isTorqueMode)
@@ -315,22 +345,63 @@ bool CtrlThread::sendJointCommands()
 
     }
     return true;
+*/
+
+if (isPositionMode)
+{
+    iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_POSITION);
+    iPos[partIndex]->positionMove(jointIndex, cmd);
 }
 
+else if (isVelocityMode)
+{
+    /*
+        Using IVelocityControl2
+    */
 
+    iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_VELOCITY);
+    // int jointVectorLength = 1;
+    // Vector jointVector(1, jointIndex);
+    // Vector cmdVector(1, cmd);
+    iVel[partIndex]->velocityMove(1, &jointIndex, &cmd);//jointVector.data(), cmdVector.data());
+
+    /*
+        Another option is to use IVelocityControl and use:
+        iVel[partIndex]->velocityMove(jointIndex, cmd);
+
+    */
+
+
+}
+
+else if (isTorqueMode)
+{
+    iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_TORQUE);
+    iTrq[partIndex]->setRefTorque(jointIndex, cmd);
+}
+
+else{return false;}
+
+return true;
+
+}
+
+/*
 void CtrlThread::setCommandToHome()
 {
     for (int rp=0; rp<numRobotParts; rp++)
     {
+
         for (int jnt = 0; jnt < nJoints[rp]; jnt++)
         {
+            iCtrl[rp]->setControlMode(jnt, VOCAB_CM_POSITION);
             command[rp][jnt] = homeVectors[rp][jnt];
             std::cout << "Going to home configuration..." << std::endl;
         }
     }
     jointCommandsHaveBeenUpdated = true;
 }
-
+*/
 
 void CtrlThread::parseIncomingGains(Bottle *newGainMessage)
 {
@@ -348,11 +419,21 @@ void CtrlThread::parseIncomingGains(Bottle *newGainMessage)
         newPid.setKi(newGainMessage->get(3).asDouble());
 
         //send new Pid to device
-        std::cout<< "sending Kp = "<< newPid.kp <<" Kd = "<< newPid.kd << " Ki = "<< newPid.ki <<" to device\n"<<std::endl;
-        if (!iPids[partIndex]->setPid(jointIndex, newPid)) {
 
-            std::cout<<"send failed...\n";
-            // Time::delay(0.001);
+        if(isPositionMode){
+            if (!iPids[partIndex]->setPid(jointIndex, newPid)) {
+                std::cout<<"Position PID send failed...\n";
+            }
+        }
+        else if(isVelocityMode){
+            if (!iVel[partIndex]->setVelPid(jointIndex, newPid)) {
+                std::cout<<"Velocity PID send failed...\n";
+            }
+        }
+        else if(isTorqueMode){
+            if (!iTrq[partIndex]->setTorquePid(jointIndex, newPid)) {
+                std::cout<<"Torque PID send failed...\n";
+            }
         }
 
         //Get those gains from the device to make sure they set properly
@@ -362,6 +443,14 @@ void CtrlThread::parseIncomingGains(Bottle *newGainMessage)
 
 
         triggerTime = Time::now();
+
+        if (isTorqueMode){
+            while(!iTrq[partIndex]->getTorque(jointIndex, &stationaryTorque) )
+            {
+                Time::delay(0.001);
+            }
+        }
+
         applyExcitationSignal = true;
 
     }
@@ -407,6 +496,64 @@ void CtrlThread::parseIncomingControlMode(Bottle *newControlModeMessage)
      */
 }
 
+void CtrlThread::parseIncomingSignalProperties(Bottle *newSignalPropertiesMessage)
+{
+    int signalType = newSignalPropertiesMessage->get(0).asInt();
+    switch (signalType) {
+        case SIG_STEP:
+        signalAmplitude = newSignalPropertiesMessage->get(1).asDouble();
+        signalStartTime = newSignalPropertiesMessage->get(2).asDouble();
+        signalDuration = newSignalPropertiesMessage->get(3).asDouble();
+        break;
+
+        case SIG_SIGN:
+        /*
+            Need to implement these signals...
+        */
+        signalAmplitude = newSignalPropertiesMessage->get(1).asDouble();
+        signalStartTime = newSignalPropertiesMessage->get(2).asDouble();
+        signalDuration = newSignalPropertiesMessage->get(3).asDouble();
+        break;
+
+        case SIG_TRIANGLE:
+        /*
+            Need to implement these signals...
+        */
+        signalAmplitude = newSignalPropertiesMessage->get(1).asDouble();
+        signalStartTime = newSignalPropertiesMessage->get(2).asDouble();
+        signalDuration = newSignalPropertiesMessage->get(3).asDouble();
+        break;
+
+        case SIG_SQUARE:
+        /*
+            Need to implement these signals...
+        */
+        signalAmplitude = newSignalPropertiesMessage->get(1).asDouble();
+        signalStartTime = newSignalPropertiesMessage->get(2).asDouble();
+        signalDuration = newSignalPropertiesMessage->get(3).asDouble();
+        break;
+
+        case SIG_DIRAC:
+        /*
+            Need to implement these signals...
+        */
+        signalAmplitude = newSignalPropertiesMessage->get(1).asDouble();
+        signalStartTime = newSignalPropertiesMessage->get(2).asDouble();
+        signalDuration = newSignalPropertiesMessage->get(3).asDouble();
+        break;
+
+        default:
+        signalAmplitude = newSignalPropertiesMessage->get(1).asDouble();
+        signalStartTime = newSignalPropertiesMessage->get(2).asDouble();
+        signalDuration = newSignalPropertiesMessage->get(3).asDouble();
+        break;
+    }
+    std::cout << "Received new signal properties:" << std::endl;
+    std::cout << "Signal Amplitude = " << signalAmplitude << std::endl;
+    std::cout << "Signal Start Time = " << signalStartTime << std::endl;
+    std::cout << "Signal Duration  = " << signalDuration << std::endl;
+}
+
 void CtrlThread::updatePidInformation()
 {
     Pid* currentPid;
@@ -414,17 +561,26 @@ void CtrlThread::updatePidInformation()
         std::cout << "no iPid device" << std::endl;
     }
 
+    bool res;
+    if(isPositionMode){
+        res = iPids[partIndex]->getPid(jointIndex, currentPid);
+    }
+    else if (isVelocityMode) {
+        res = iVel[partIndex]->getVelPid(jointIndex, currentPid);
+    }
+    else if (isTorqueMode) {
+        res = iTrq[partIndex]->getTorquePid(jointIndex, currentPid);
+    }
 
-    if(iPids[partIndex]->getPid(jointIndex, currentPid))
+
+
+    if(res)
     {
         Kp_thread = currentPid->kp;
         Kd_thread = currentPid->kd;
         Ki_thread = currentPid->ki;
     }
-    else{
-        std::cout << "[ERROR] Couldn't retrieve PID from part "<<partIndex << ", joint " << jointIndex<<"." << std::endl;
-    }
-
+    else{std::cout << "[ERROR] Couldn't retrieve PID from part "<<partIndex << ", joint " << jointIndex<< std::endl;}
 
 }
 
@@ -442,7 +598,7 @@ void CtrlThread::sendPidGains()
 }
 
 //
-
+/*
 void CtrlThread::createPidLog()
 {
     std::string directoryName = "PID_GAIN_LOGS";
@@ -473,6 +629,8 @@ void CtrlThread::writeToPidLog()
 
 
 }
+*/
+
 
 const std::string CtrlThread::currentDateTime()
 {
@@ -513,41 +671,65 @@ void CtrlThread::finalizeDataVectors()
     data_input.resize(iterationCounter);
     data_response.resize(iterationCounter);
 
+    if (isVelocityMode) {
+        Vector dq = data_response.subVector(1,data_response.size()-1) - data_response.subVector(0,data_response.size()-2);
+        Vector dt = data_time.subVector(1,data_time.size()-1) - data_time.subVector(0,data_time.size()-2);
+
+        data_response(0) = 0.0;
+        data_response.subVector(1,data_response.size()-1) = dq / dt;
+    }
+
     dataReadyForDelivery = true;
 }
 
-bool CtrlThread::excitationSignal()
+bool CtrlThread::excitationSignal(double &cmd)
 {
-
-
 
     if (applyExcitationSignal)
     { // need to implement different signal types
         double relativeT = Time::now() - triggerTime;
-        double applyInputTime = 0.5;
-        double signalDuration = 1.5;
-
 
 
         data_time[iterationCounter] = relativeT;
 
-        double stepAmplitude = 0.5; //deg
-        if (relativeT<applyInputTime)
+        if (relativeT<signalStartTime)
         {
-            command[partIndex][jointIndex] = homeVectors[partIndex][jointIndex];
+            if(isPositionMode)
+                cmd = homeVectors[partIndex][jointIndex];
+
+            else if(isVelocityMode)
+                cmd = 0.0;
+
+            else if(isTorqueMode)
+                cmd = stationaryTorque;
 
             return true;
         }
-        else if (relativeT>=applyInputTime && relativeT<(applyInputTime+signalDuration))
+        else if (relativeT>=signalStartTime && relativeT<(signalStartTime+signalDuration))
         {
-            command[partIndex][jointIndex] = homeVectors[partIndex][jointIndex] + stepAmplitude;
+            if(isPositionMode)
+                cmd = homeVectors[partIndex][jointIndex] + signalAmplitude;
+
+            else if(isVelocityMode)
+                cmd = signalAmplitude;
+
+            else if(isTorqueMode)
+                cmd = stationaryTorque + signalAmplitude;
 
             return true;
         }
-        else if (relativeT>=(applyInputTime+signalDuration))
+        else if (relativeT>=(signalStartTime+signalDuration))
         {
 
-            command[partIndex][jointIndex] = homeVectors[partIndex][jointIndex];
+            if(isPositionMode)
+                cmd = homeVectors[partIndex][jointIndex];
+
+            else if(isVelocityMode)
+                cmd = 0.0;
+
+            else if(isTorqueMode)
+                cmd = stationaryTorque;
+
             finalizeDataVectors();
             applyExcitationSignal = false;
             return true;
@@ -564,13 +746,23 @@ bool CtrlThread::excitationSignal()
 
 double CtrlThread::getJointResponse()
 {
-    if (isPositionMode)
+    if (isPositionMode || isVelocityMode)
     {
         while(!iEnc[partIndex]->getEncoders(encoders[partIndex].data()) )
         {
             Time::delay(0.001);
         }
         return encoders[partIndex][jointIndex];
+    }
+
+    else if (isTorqueMode)
+    {
+        double measuredTorque;
+        while(!iTrq[partIndex]->getTorque(jointIndex, &measuredTorque) )
+        {
+            Time::delay(0.001);
+        }
+        return measuredTorque;
     }
 }
 
@@ -610,36 +802,3 @@ void CtrlThread::sendDataToGui()
 
     std::cout << "data sent\n-----\n" << std::endl;
 }
-
-// double degChange = 1.0;
-//
-// if ( (command[partIndex][jointIndex] < jointLimitsUpper[partIndex][jointIndex]) && !reverseDirectrion)
-// {
-//     command[partIndex][jointIndex] += degChange;
-// }
-//
-// else if( (command[partIndex][jointIndex] > jointLimitsLower[partIndex][jointIndex]) && reverseDirectrion)
-// {
-//     command[partIndex][jointIndex] -= degChange;
-// }
-//
-// else
-// {
-//     reverseDirectrion = !reverseDirectrion;
-//     reversalCounter++;
-// }
-//
-// if (reversalCounter>=2)
-// {
-//     command[partIndex][jointIndex] = homeVectors[partIndex][jointIndex];
-//
-//     jointIndex++;
-//
-//     if (jointIndex==nJoints[partIndex])
-//     {jointIndex = 0; partIndex++;}
-//
-//     if(partIndex==numRobotParts)
-//     {jointIndex=0; partIndex=0;}
-//
-//     reversalCounter = 0;
-// }

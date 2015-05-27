@@ -21,10 +21,25 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+    signalAmplitude_POS_DEFAULT = 0.5;
+    signalStartTime_POS_DEFAULT = 0.5;
+    signalDuration_POS_DEFAULT = 1.5;
+
+    signalAmplitude_VEL_DEFAULT = 0.1;
+    signalStartTime_VEL_DEFAULT = 0.1;
+    signalDuration_VEL_DEFAULT = 0.5;
+
+    signalAmplitude_TOR_DEFAULT = 0.05;
+    signalStartTime_TOR_DEFAULT = 0.1;
+    signalDuration_TOR_DEFAULT = 0.5;
+
+
 
 
 
     controlMode = POSITION_MODE;
+
+
 
     isOnlyMajorJoints = true;
     gainsHaveBeenChanged = false;
@@ -43,6 +58,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     dataPort_in.open("/pidTunerGui/data/in");
 
+    signalPropertiesBufPort_out.open("/pidTunerGui/signalProperties/out");
+
     ///////////////////////////////////
     while(!yarp.connect("/pidTunerGui/gains/out", "/pidTunerController/gains/in") ){Time::delay(0.1);}
     while(!yarp.connect("/pidTunerController/gains/out", "/pidTunerGui/gains/in") ){Time::delay(0.1);}
@@ -55,8 +72,15 @@ MainWindow::MainWindow(QWidget *parent) :
 
     while(!yarp.connect("/pidTunerController/data/out", "/pidTunerGui/data/in") ){Time::delay(0.1);}
 
+    while(!yarp.connect("/pidTunerGui/signalProperties/out", "/pidTunerController/signalProperties/in") ){Time::delay(0.1);}
+
     initFinished = false;
     ui->setupUi(this);
+
+
+
+
+    setSignalPropertiesToDefaults();
     initializeGui();
     getPidGains();
     createDataLogs();
@@ -85,11 +109,12 @@ void MainWindow::initializeGui()
     ui->partList->setCurrentIndex(partIndex);
     jointIndex = ui->jointList->count()-1;
     setCurrentPartAndJoint();
+    sendPartAndJointIndexes();
 
     ui->posContButton->click();
     ui->statusInfoLabel->setText("ready");
 
-    // getPidGains();
+    // ui->posPlotdGains();
     createPlot();
 
 
@@ -109,6 +134,15 @@ void MainWindow::createPlot()
     // set axes ranges, so we see all data:
     // ui->posPlot->xAxis->setRange(-1, 1);
     // ui->posPlot->yAxis->setRange(0, 1);
+    // add title layout element:
+    ui->posPlot->plotLayout()->insertRow(0);
+    plotTitle = new QCPPlotTitle(ui->posPlot, ui->jointList->currentText());
+    ui->posPlot->plotLayout()->addElement(0, 0, plotTitle);
+    QFont titleFont= font();
+    plotTitle->setFont(titleFont);
+
+
+
 
     QPen inputPen;
     inputPen.setColor(Qt::blue);
@@ -349,7 +383,10 @@ void MainWindow::on_jointList_currentIndexChanged(int jointId)
     jointIndex = jointId;
     if (initFinished && jointId>=0){
         sendPartAndJointIndexes();
+        plotTitle->setText(ui->jointList->currentText());
+        ui->posPlot->replot();
     }
+
 }
 
 
@@ -432,7 +469,16 @@ void MainWindow::on_posContButton_clicked(bool checked)
             resetYLabel();
             ui->velContButton->setChecked(false);
             ui->torContButton->setChecked(false);
+
+            signalAmplitude = signalAmplitude_POS;
+            signalStartTime = signalStartTime_POS;
+            signalDuration = signalDuration_POS;
+            updateSignalPropertiesInGui();
+            sendExcitationSignalProperties();
         }
+    }
+    else{
+        ui->posContButton->setChecked(false);
     }
 }
 
@@ -448,6 +494,11 @@ void MainWindow::on_velContButton_clicked(bool checked)
             resetYLabel();
             ui->posContButton->setChecked(false);
             ui->torContButton->setChecked(false);
+            signalAmplitude = signalAmplitude_VEL;
+            signalStartTime = signalStartTime_VEL;
+            signalDuration = signalDuration_VEL;
+            updateSignalPropertiesInGui();
+            sendExcitationSignalProperties();
         }
     }
     else{
@@ -466,7 +517,15 @@ void MainWindow::on_torContButton_clicked(bool checked)
             resetYLabel();
             ui->posContButton->setChecked(false);
             ui->velContButton->setChecked(false);
+            signalAmplitude = signalAmplitude_TOR;
+            signalStartTime = signalStartTime_TOR;
+            signalDuration = signalDuration_TOR;
+            updateSignalPropertiesInGui();
+            sendExcitationSignalProperties();
         }
+    }
+    else{
+        ui->torContButton->setChecked(false);
     }
 }
 
@@ -810,4 +869,197 @@ const std::string MainWindow::currentDateTime()
     tstruct = *localtime(&now);
     strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
     return buf;
+}
+
+void MainWindow::on_amplitude_in_editingFinished()
+{
+    bool ok;
+    double amp_tmp = ui->amplitude_in->text().toDouble(&ok);
+    if(!ok){
+        ui->amplitude_in->setStyleSheet("QLineEdit { background: rgb(255, 0, 0)}");
+        int ret = QMessageBox::warning(this, tr("Warning"),
+                                       tr("The signal parameters must be numbers. Try again dummy."),
+                                       QMessageBox::Ok);
+        if(!ui->amplitude_in->hasFocus())
+            ui->amplitude_in->setFocus();
+
+        ui->amplitude_in->selectAll();
+
+    }
+    else{
+        ui->amplitude_in->setStyleSheet("QLineEdit { background: rgb(255, 255, 255)}");
+
+        switch (controlMode) {
+            case POSITION_MODE:
+                signalAmplitude_POS = amp_tmp;
+            break;
+
+            case VELOCITY_MODE:
+                signalAmplitude_VEL = amp_tmp;
+            break;
+
+            case TORQUE_MODE:
+                signalAmplitude_TOR = amp_tmp;
+            break;
+        }
+        signalAmplitude = amp_tmp;
+        sendExcitationSignalProperties();
+    }
+
+}
+
+void MainWindow::on_startTime_in_editingFinished()
+{
+    bool ok;
+    double start_tmp = ui->startTime_in->text().toDouble(&ok);
+    if(!ok){
+        ui->startTime_in->setStyleSheet("QLineEdit { background: rgb(255, 0, 0)}");
+        int ret = QMessageBox::warning(this, tr("Warning"),
+                                       tr("The signal parameters must be numbers. Try again dummy."),
+                                       QMessageBox::Ok);
+        if(!ui->startTime_in->hasFocus())
+            ui->startTime_in->setFocus();
+
+        ui->startTime_in->selectAll();
+
+    }
+    else{
+        ui->startTime_in->setStyleSheet("QLineEdit { background: rgb(255, 255, 255)}");
+
+        switch (controlMode) {
+            case POSITION_MODE:
+                signalStartTime_POS = start_tmp;
+            break;
+
+            case VELOCITY_MODE:
+                signalStartTime_VEL = start_tmp;
+            break;
+
+            case TORQUE_MODE:
+                signalStartTime_TOR = start_tmp;
+            break;
+        }
+        signalStartTime = start_tmp;
+        sendExcitationSignalProperties();
+    }
+}
+
+void MainWindow::on_duration_in_editingFinished()
+{
+    bool ok;
+    double dur_tmp = ui->duration_in->text().toDouble(&ok);
+    if(!ok){
+        ui->duration_in->setStyleSheet("QLineEdit { background: rgb(255, 0, 0)}");
+        int ret = QMessageBox::warning(this, tr("Warning"),
+                                       tr("The signal parameters must be numbers. Try again dummy."),
+                                       QMessageBox::Ok);
+        if(!ui->duration_in->hasFocus())
+            ui->duration_in->setFocus();
+
+        ui->duration_in->selectAll();
+
+    }
+    else{
+        ui->duration_in->setStyleSheet("QLineEdit { background: rgb(255, 255, 255)}");
+
+        switch (controlMode) {
+            case POSITION_MODE:
+                signalDuration_POS = dur_tmp;
+            break;
+
+            case VELOCITY_MODE:
+                signalDuration_VEL = dur_tmp;
+            break;
+
+            case TORQUE_MODE:
+                signalDuration_TOR = dur_tmp;
+            break;
+        }
+        signalDuration = dur_tmp;
+        sendExcitationSignalProperties();
+    }
+}
+
+void MainWindow::on_resetSignalPropButton_clicked()
+{
+    setSignalPropertiesToDefaults();
+}
+
+void MainWindow::sendExcitationSignalProperties()
+{
+    Bottle& sigPropsBottle_out = signalPropertiesBufPort_out.prepare(); // Get a place to store things.
+    sigPropsBottle_out.clear();
+    sigPropsBottle_out.addInt(ui->signalTypeComboBox->currentIndex()); // tells the receiver that new gains are comming and should be set
+    sigPropsBottle_out.addDouble(signalAmplitude);
+    sigPropsBottle_out.addDouble(signalStartTime);
+    sigPropsBottle_out.addDouble(signalDuration);
+    signalPropertiesBufPort_out.write();
+}
+
+
+void MainWindow::setSignalPropertiesToDefaults()
+{
+    signalAmplitude_POS =   signalAmplitude_POS_DEFAULT;
+    signalStartTime_POS =   signalStartTime_POS_DEFAULT;
+    signalDuration_POS  =   signalDuration_POS_DEFAULT;
+
+    signalAmplitude_VEL =   signalAmplitude_VEL_DEFAULT;
+    signalStartTime_VEL =   signalStartTime_VEL_DEFAULT;
+    signalDuration_VEL  =   signalDuration_VEL_DEFAULT;
+
+    signalAmplitude_TOR =   signalAmplitude_TOR_DEFAULT;
+    signalStartTime_TOR =   signalStartTime_TOR_DEFAULT;
+    signalDuration_TOR  =   signalDuration_TOR_DEFAULT;
+
+
+    switch (controlMode) {
+        case POSITION_MODE:
+        signalAmplitude = signalAmplitude_POS;
+        signalStartTime = signalStartTime_POS;
+        signalDuration  = signalDuration_POS;
+        break;
+
+        case VELOCITY_MODE:
+        signalAmplitude = signalAmplitude_VEL;
+        signalStartTime = signalStartTime_VEL;
+        signalDuration  = signalDuration_VEL;
+        break;
+
+        case TORQUE_MODE:
+        signalAmplitude = signalAmplitude_TOR;
+        signalStartTime = signalStartTime_TOR;
+        signalDuration  = signalDuration_TOR;
+        break;
+    }
+
+    updateSignalPropertiesInGui();
+    sendExcitationSignalProperties();
+
+}
+
+void MainWindow::updateSignalPropertiesInGui()
+{
+
+    ui->amplitude_in->setText(QString::number(signalAmplitude));
+    ui->startTime_in->setText(QString::number(signalStartTime));
+    ui->duration_in->setText(QString::number(signalDuration));
+}
+
+
+void MainWindow::on_savePlotButton_clicked()
+{
+
+    // std::string filePath = "test.png";
+    // QString qFilePath = QString::fromStdString(filePath);
+    // qDebug()<<qFilePath;
+    // ui->posPlot->savePng(qFilePath);
+    std::string appendNotes = "_"+controlMode_string+".png";
+    QString qFilePath(ui->jointList->currentText().append(QString::fromStdString(appendNotes)));
+    if(ui->posPlot->savePng(qFilePath) )
+    {
+        std::cout << "File saved to "+ qFilePath.toStdString() << std::endl;
+    }
+    else{
+        std::cout << "[ERROR] Failed to save file. Check filepath:\n"+qFilePath.toStdString() << std::endl;
+    }
 }

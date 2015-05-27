@@ -43,13 +43,14 @@ using namespace yarp::math;
 class CtrlThread: public RateThread
 {
     protected:
-        std::vector<PolyDriver*>        robotDevice;
-        std::vector<IEncoders*>         iEnc;
-        std::vector<IPositionControl*>  iPos;
-        std::vector<IVelocityControl*>  iVel;
-        std::vector<ITorqueControl*>    iTrq;
-        std::vector<IControlLimits*>    iLims;
-        std::vector<IPidControl*>       iPids;
+        std::vector<PolyDriver*>            robotDevice;
+        std::vector<IEncoders*>             iEnc;
+        std::vector<IPositionControl*>      iPos;
+        std::vector<IVelocityControl2*>     iVel;
+        std::vector<ITorqueControl*>        iTrq;
+        std::vector<IControlLimits*>        iLims;
+        std::vector<IPidControl*>           iPids;
+        std::vector<IControlMode2*>         iCtrl;
 
 
 
@@ -76,8 +77,9 @@ class CtrlThread: public RateThread
         int partIndex, jointIndex;
 
 
-        bool reverseDirectrion;
-        int reversalCounter;
+        double stationaryTorque;
+
+
 
 
 
@@ -97,13 +99,12 @@ class CtrlThread: public RateThread
         bool openInterfaces();
 
         bool goToHome();
-        bool sendJointCommands();
+        bool sendJointCommand(double cmd);
         void setCommandToHome();
 
 
-        void createPidLog();
-
-        void writeToPidLog();
+        // void createPidLog();
+        // void writeToPidLog();
 
         const std::string currentDateTime();
 
@@ -111,7 +112,7 @@ class CtrlThread: public RateThread
 
         bool applyExcitationSignal;
 
-        double triggerTime, signalStartTime;
+        double signalAmplitude, triggerTime, signalStartTime, signalDuration;
 
         Vector data_time;
         Vector data_input;
@@ -127,8 +128,9 @@ class CtrlThread: public RateThread
         void sendPidGains();
         void parseIncomingGains(Bottle *newGainMessage);
         void parseIncomingControlMode(Bottle *newControlModeMessage);
+        void parseIncomingSignalProperties(Bottle *newControlModeMessage);
         void updatePidInformation();
-        bool excitationSignal();
+        bool excitationSignal(double &cmd);
         void resizeDataVectors();
         double getJointResponse();
         void finalizeDataVectors();
@@ -145,5 +147,6 @@ class CtrlThread: public RateThread
 
         Port                    dataPort_out;
 
+        BufferedPort<Bottle>    signalPropertiesBufPort_in;
 
 };
