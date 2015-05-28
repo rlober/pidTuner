@@ -65,6 +65,7 @@ When Gazebo opens, drop in an `icub_fixed`.
 
 
 Now in the build directory, `pidTuner/build/`
+
 **Terminal 3**
 ```
 ./pidTunerController
