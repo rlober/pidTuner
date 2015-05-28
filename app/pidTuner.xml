@@ -1,0 +1,35 @@
+
+<application>
+    <name>pidTuner</name>
+    <description>A GUI for manually tuning the position, velocity and torque gains on the iCub robot.</description>
+    <version>1.0</version>
+    <authors>
+        <author email="ryan.lober@isir.upmc.fr">Ryan Lober</author>
+    </authors>
+    <!--
+        The controller module talks with the control board devices and manages
+        the control mode states of the robot. Pretty much any control logic is
+        handled in this module.
+
+        Launch this module FIRST.
+    -->
+    <module>
+        <name>pidTunerController</name>
+        <node>localhost</node>
+        <tag>pidTunerController</tag>
+    </module>
+    <!--
+        The GUI module automatically connects to the Control module and allows
+        the user to manually adjust the PID gains, control mode, excitation
+        signal properties, robot part and joint etc.
+
+        Launch this module SECOND. It will wait for the controller ports in any
+        case.
+    -->
+    <module>
+        <name>pidTunerGui</name>
+        <node>localhost</node>
+        <tag>pidTunerGui</tag>
+    </module>
+
+</application>
