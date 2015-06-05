@@ -48,16 +48,24 @@
 
 
 
-CtrlThread::CtrlThread(const double period) : RateThread(int(period*1000.0))
+CtrlThread::CtrlThread(const double period, const std::string Robot_Name) :
+    RateThread(int(period*1000.0)),
+    robotName(Robot_Name)
 {
-    //do nothing
+    if (robotName.size()==0) {
+        std::cout << "[WARNING] Robot name was not initialized. Defaulting to robotName=icubGazeboSim." << std::endl;
+        std::cout << "To set the robot name simply use: --robot [name of robot] when launching the pidTunerController. Remember, no brackets around the name of the robot." << std::endl;
+
+        robotName="icubGazeboSim";
+    }
 }
 
 
 
 bool CtrlThread::threadInit()
 {
-    robotName = "icubGazeboSim";
+
+    // robotName = "icubGazeboSim";
     extension = ".txt";
     baseFilePath = "/home/ryan/Desktop/";
 
@@ -145,6 +153,7 @@ void CtrlThread::run()
     // Check if new gains have come in or if the user wants the current gains
     Bottle *gainsMessage = gainsBufPort_in.read(false);
     if (gainsMessage!=NULL) {
+        std::cout << "Received gains message." << std::endl;
         resizeDataVectors();
         parseIncomingGains(gainsMessage);
         sendPidGains();
@@ -153,6 +162,7 @@ void CtrlThread::run()
     // Check if the user wants to go to Home Pose
     Bottle *goToHomeMessage = goToHomeBufPort_in.read(false);
     if (goToHomeMessage!=NULL) {
+        std::cout << "Received go to home message." << std::endl;
         if(goToHomeMessage->get(0).asInt()==1){
             // setCommandToHome();
             goToHome();
@@ -161,6 +171,7 @@ void CtrlThread::run()
 
     Bottle *robotPartAndJointMessage = robotPartAndJointBufPort_in.read(false);
     if (robotPartAndJointMessage!=NULL) {
+        std::cout << "Received part and joint index message." << std::endl;
         partIndex = robotPartAndJointMessage->get(0).asInt();
         jointIndex = robotPartAndJointMessage->get(1).asInt();
         updatePidInformation();
@@ -168,12 +179,14 @@ void CtrlThread::run()
 
     Bottle *controlModeMessage = controlModeBufPort_in.read(false);
     if (controlModeMessage!=NULL) {
+        std::cout << "Received control mode message." << std::endl;
         parseIncomingControlMode(controlModeMessage);
         updatePidInformation();
     }
 
     Bottle *signalPropertiesMessage = signalPropertiesBufPort_in.read(false);
     if (signalPropertiesMessage!=NULL) {
+        std::cout << "Received signal properties message." << std::endl;
         parseIncomingSignalProperties(signalPropertiesMessage);
     }
 
@@ -255,13 +268,22 @@ bool CtrlThread::openInterfaces()
         robotDevice.push_back(tmp_robotDevice);
 
         bool ok;
+
+        std::cout << "\nViewing Devices:" << std::endl;
         ok = robotDevice[rp]->view(iPos[rp]);
+        std::cout << "iPos created" << std::endl;
         ok = ok && robotDevice[rp]->view(iEnc[rp]);
+        std::cout << "iEnc created" << std::endl;
         ok = ok && robotDevice[rp]->view(iVel[rp]);
+        std::cout << "iVel created" << std::endl;
         ok = ok && robotDevice[rp]->view(iTrq[rp]);
+        std::cout << "iTrq created" << std::endl;
         ok = ok && robotDevice[rp]->view(iLims[rp]);
+        std::cout << "iLims created" << std::endl;
         ok = ok && robotDevice[rp]->view(iPids[rp]);
+        std::cout << "iPids created" << std::endl;
         ok = ok && robotDevice[rp]->view(iCtrl[rp]);
+        std::cout << "iCtrl created" << std::endl;
 
 
 
@@ -309,9 +331,10 @@ bool CtrlThread::openInterfaces()
         // {
         //     Time::delay(0.01);
         // }
-
+        //
         while(!iEnc[rp]->getEncoders(command[rp].data()))
         {
+            std::cout << "getting encoder data" << std::endl;
             Time::delay(0.01);
         }
 
@@ -782,6 +805,7 @@ double CtrlThread::getJointResponse()
     {
         while(!iEnc[partIndex]->getEncoders(encoders[partIndex].data()) )
         {
+            std::cout << "Waiting on Encoders..." << std::endl;
             Time::delay(0.001);
         }
         return encoders[partIndex][jointIndex];

@@ -11,7 +11,9 @@ bool CtrlModule::configure(ResourceFinder &rf)
 {
     Time::turboBoost();
 
-    thr=new CtrlThread(CTRL_THREAD_PER);
+    ConstString robotName=rf.find("robot").asString();
+    std::cout << robotName.c_str() << std::endl;
+    thr=new CtrlThread(CTRL_THREAD_PER, robotName);
     if (!thr->start())
     {
         delete thr;

@@ -92,6 +92,9 @@ MainWindow::MainWindow(QWidget *parent) :
     signalPropertiesBufPort_out.open("/pidTunerGui/signalProperties/out");
 
     ///////////////////////////////////
+
+    std::cout << "\nConnecting Ports\n" << std::endl;
+
     while(!yarp.connect("/pidTunerGui/gains/out", "/pidTunerController/gains/in") ){Time::delay(0.1);}
     while(!yarp.connect("/pidTunerController/gains/out", "/pidTunerGui/gains/in") ){Time::delay(0.1);}
 
@@ -105,17 +108,37 @@ MainWindow::MainWindow(QWidget *parent) :
 
     while(!yarp.connect("/pidTunerGui/signalProperties/out", "/pidTunerController/signalProperties/in") ){Time::delay(0.1);}
 
+
+    std::cout << "\nPorts connected.\n" << std::endl;
     initFinished = false;
+
+    std::cout << "Setting up Qt Ui" << std::endl;
     ui->setupUi(this);
+    std::cout << "Ui setup." << std::endl;
 
 
 
 
+    std::cout << "Setting signal properties to default values...";
     setSignalPropertiesToDefaults();
+    std::cout << "\tdone." << std::endl;
+
+    std::cout << "initializing GUI...";
     initializeGui();
+    std::cout << "\tdone." << std::endl;
+
+    std::cout << "Getting PID Gains...";
     getPidGains();
+    std::cout << "\tdone." << std::endl;
+
+    std::cout << "Creating data logs...";
     createDataLogs();
+    std::cout << "\tdone." << std::endl;
+
+
     initFinished = true;
+
+    std::cout << "\n-----------\nGui initialization finished!\n-----------"<< std::endl;
 
 }
 
@@ -416,6 +439,7 @@ void MainWindow::on_jointList_currentIndexChanged(int jointId)
         sendPartAndJointIndexes();
         plotTitle->setText(ui->jointList->currentText());
         ui->posPlot->replot();
+        std::cout << "Joint Index has been changed." << std::endl;
     }
 
 }
@@ -731,6 +755,7 @@ bool MainWindow::setPidGains()
 
 void MainWindow::sendPartAndJointIndexes()
 {
+    std::cout << "Sending part and joint indexes: "<< partIndex << " & " << jointIndex << std::endl;
 
     Bottle& partAndJointIndexesBottle_out = robotPartAndJointBufPort_out.prepare(); // Get a place to store things.
     partAndJointIndexesBottle_out.clear();
@@ -738,7 +763,9 @@ void MainWindow::sendPartAndJointIndexes()
     partAndJointIndexesBottle_out.addInt(jointIndex);
     robotPartAndJointBufPort_out.write();
 
+    std::cout << "Getting PID gains..." << std::endl;
     getPidGains();
+    std::cout << "done." << std::endl;
 
 
 }

@@ -116,7 +116,7 @@ class CtrlThread: public RateThread
 
 
     public:
-        CtrlThread(const double period);
+        CtrlThread(const double period, const std::string Robot_Name);
 
         virtual bool threadInit();
 
