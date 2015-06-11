@@ -54,7 +54,7 @@ bool CtrlModule::updateModule()
 int main(int argc, char *argv[])
 {
     // we need to initialize the drivers list
-    YARP_REGISTER_DEVICES(icubmod)
+    // YARP_REGISTER_DEVICES(icubmod)
 
 
     Network yarp;

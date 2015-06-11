@@ -56,7 +56,7 @@ CtrlThread::CtrlThread(const double period, const std::string Robot_Name) :
         std::cout << "[WARNING] Robot name was not initialized. Defaulting to robotName=icubGazeboSim." << std::endl;
         std::cout << "To set the robot name simply use: --robot [name of robot] when launching the pidTunerController. Remember, no brackets around the name of the robot." << std::endl;
 
-        robotName="icubGazeboSim";
+        robotName="icub";
     }
 }
 
@@ -475,6 +475,9 @@ void CtrlThread::parseIncomingGains(Bottle *newGainMessage)
 
         //send new Pid to device
 
+        if (iPids[partIndex]==NULL) {
+            std::cout << "there is no iPid pointer here..." << std::endl;
+        }
         if(isPositionMode){
             if (!iPids[partIndex]->setPid(jointIndex, newPid)) {
                 std::cout<<"Position PID send failed...\n";
@@ -611,14 +614,19 @@ void CtrlThread::parseIncomingSignalProperties(Bottle *newSignalPropertiesMessag
 
 void CtrlThread::updatePidInformation()
 {
+    std::cout << "updating PID information" << std::endl;
     Pid* currentPid;
+
     if (iPids[partIndex]==NULL) {
         std::cout << "no iPid device" << std::endl;
     }
+    else{std::cout << "trying to get PID from joint." << std::endl;}
 
     bool res;
     if(isPositionMode){
+        std::cout << "Test 1" << std::endl;
         res = iPids[partIndex]->getPid(jointIndex, currentPid);
+        std::cout << "Test 2" << std::endl;
     }
     else if (isVelocityMode) {
         res = iVel[partIndex]->getVelPid(jointIndex, currentPid);
@@ -627,12 +635,17 @@ void CtrlThread::updatePidInformation()
         res = iTrq[partIndex]->getTorquePid(jointIndex, currentPid);
     }
 
-
+    if (currentPid==NULL) {
+        std::cout << "currentPid is NULL" << std::endl;
+    }
 
     if(res)
     {
+        std::cout << "Getting kp" << std::endl;
         Kp_thread = currentPid->kp;
+        std::cout << "Getting kd" << std::endl;
         Kd_thread = currentPid->kd;
+        std::cout << "Getting ki" << std::endl;
         Ki_thread = currentPid->ki;
     }
     else{std::cout << "[ERROR] Couldn't retrieve PID from part "<<partIndex << ", joint " << jointIndex<< std::endl;}

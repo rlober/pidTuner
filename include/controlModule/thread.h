@@ -62,7 +62,7 @@
 
 
 
-YARP_DECLARE_DEVICES(icubmod)
+// YARP_DECLARE_DEVICES(icubmod)
 
 using namespace yarp::os;
 using namespace yarp::dev;
