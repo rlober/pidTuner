@@ -16,8 +16,19 @@ set(CMAKE_AUTOUIC ON)
 # to always look for includes there:
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-find_package(Qt5Widgets REQUIRED)
-find_package(Qt5PrintSupport REQUIRED)
+if(DEFINED ENV{Qt5_DIR})
+  set(CODYCO_QT_CMAKE_PATH $ENV{Qt5_DIR})
+  message("Found CODYCO_QT_CMAKE_PATH: " ${CODYCO_QT_CMAKE_PATH})
+
+  find_package(Qt5Widgets PATHS ${CODYCO_QT_CMAKE_PATH}../Qt5Widgets REQUIRED)
+  find_package(Qt5PrintSupport PATHS ${CODYCO_QT_CMAKE_PATH}../Qt5PrintSupport REQUIRED)
+
+else()
+  find_package(Qt5Widgets REQUIRED)
+  find_package(Qt5PrintSupport REQUIRED)
+
+endif()
+
 
 find_package(YARP)
 find_package(ICUB)
