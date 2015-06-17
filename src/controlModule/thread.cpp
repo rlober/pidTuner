@@ -56,7 +56,7 @@ CtrlThread::CtrlThread(const double period, const std::string Robot_Name) :
         std::cout << "[WARNING] Robot name was not initialized. Defaulting to robotName=icubGazeboSim." << std::endl;
         std::cout << "To set the robot name simply use: --robot [name of robot] when launching the pidTunerController. Remember, no brackets around the name of the robot." << std::endl;
 
-        robotName="icub";
+        robotName="icubGazeboSim";
     }
 }
 
@@ -332,12 +332,17 @@ bool CtrlThread::openInterfaces()
         //     Time::delay(0.01);
         // }
         //
-        while(!iEnc[rp]->getEncoders(command[rp].data()))
+        double timeout = 2.0; //seconds
+        double delayTime = 0.01; //seconds
+        double timeWaiting = 0.0; //seconds
+        while(!iEnc[rp]->getEncoders(command[rp].data()) && timeWaiting <= timeout  )
         {
-            std::cout << "getting encoder data" << std::endl;
-            Time::delay(0.01);
+            Time::delay(delayTime);
+            timeWaiting += delayTime;
+            if (timeWaiting > timeout) {
+                std::cout << "[ERR] (line "<< __LINE__<< ") Timeout while waiting for "<< curRobPart <<" encoder data. Skipping." << std::endl;
+            }
         }
-
 
 
 
@@ -615,7 +620,7 @@ void CtrlThread::parseIncomingSignalProperties(Bottle *newSignalPropertiesMessag
 void CtrlThread::updatePidInformation()
 {
     std::cout << "updating PID information" << std::endl;
-    Pid* currentPid;
+    Pid currentPid;
 
     if (iPids[partIndex]==NULL) {
         std::cout << "no iPid device" << std::endl;
@@ -625,28 +630,28 @@ void CtrlThread::updatePidInformation()
     bool res;
     if(isPositionMode){
         std::cout << "Test 1" << std::endl;
-        res = iPids[partIndex]->getPid(jointIndex, currentPid);
+        res = iPids[partIndex]->getPid(jointIndex, &currentPid);
         std::cout << "Test 2" << std::endl;
     }
     else if (isVelocityMode) {
-        res = iVel[partIndex]->getVelPid(jointIndex, currentPid);
+        res = iVel[partIndex]->getVelPid(jointIndex, &currentPid);
     }
     else if (isTorqueMode) {
-        res = iTrq[partIndex]->getTorquePid(jointIndex, currentPid);
+        res = iTrq[partIndex]->getTorquePid(jointIndex, &currentPid);
     }
 
-    if (currentPid==NULL) {
-        std::cout << "currentPid is NULL" << std::endl;
-    }
+    // if (currentPid==NULL) {
+    //     std::cout << "currentPid is NULL" << std::endl;
+    // }
 
     if(res)
     {
         std::cout << "Getting kp" << std::endl;
-        Kp_thread = currentPid->kp;
+        Kp_thread = currentPid.kp;
         std::cout << "Getting kd" << std::endl;
-        Kd_thread = currentPid->kd;
+        Kd_thread = currentPid.kd;
         std::cout << "Getting ki" << std::endl;
-        Ki_thread = currentPid->ki;
+        Ki_thread = currentPid.ki;
     }
     else{std::cout << "[ERROR] Couldn't retrieve PID from part "<<partIndex << ", joint " << jointIndex<< std::endl;}
 
