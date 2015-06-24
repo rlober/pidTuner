@@ -33,7 +33,14 @@ endif()
 find_package(YARP)
 find_package(ICUB)
 find_package(Boost COMPONENTS system filesystem REQUIRED)
-find_package(TinyXML REQUIRED)
+find_package(TinyXML)
+
+if (NOT TinyXML_FOUND)
+  message(WARNING "Couldn't find tinyXML using find_package. Attempting with PkgConfig...")
+  find_package(PkgConfig REQUIRED)
+  PKG_CHECK_MODULES(TinyXML tinyxml REQUIRED)
+endif()
+
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${YARP_MODULE_PATH})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ICUB_MODULE_PATH})
