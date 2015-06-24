@@ -166,6 +166,8 @@ class CtrlThread: public RateThread
         double getJointResponse();
         void finalizeDataVectors();
         void sendDataToGui();
+        bool jointLimitsReached();
+
 
         BufferedPort<Bottle>    gainsBufPort_in; // incoming new gains
         Port                    gainsPort_out; // outgoing current gains

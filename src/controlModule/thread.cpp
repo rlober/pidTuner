@@ -213,7 +213,11 @@ void CtrlThread::run()
 
         if (runningTest){
             data_response[iterationCounter] = getJointResponse();
-
+            if(jointLimitsReached()){
+                finalizeDataVectors();
+                applyExcitationSignal = false;
+                std::cout << "\n\n[WARNING] Joint limit has been reached. Potentially unsafe behavior has been detected so I am stopping this test!\n" << std::endl;
+            }
 
             if(dataReadyForDelivery){
                 sendDataToGui();
@@ -317,7 +321,7 @@ bool CtrlThread::openInterfaces()
 
 
         for (int i = 0; i < nJoints[rp]; i++) {
-             tmp[rp][i] = 50.0;
+             tmp[rp][i] = 30.0;
              iLims[rp]->getLimits(i, &jointLimitsLower[rp][i], &jointLimitsUpper[rp][i]);
         }
         iPos[rp]->setRefAccelerations(tmp[rp].data());
@@ -392,64 +396,41 @@ bool CtrlThread::goToHome()
 
 bool CtrlThread::sendJointCommand(double cmd)
 {
-/*
-    for (int rp=0; rp<numRobotParts; rp++)
+
+    if (isPositionMode)
     {
-        if (isPositionMode)
-        {
-            iPos[rp]->positionMove(command[rp].data());
-        }
+        iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_POSITION);
+        iPos[partIndex]->positionMove(jointIndex, cmd);
+    }
 
-        else if (isVelocityMode)
-        {
-            iVel[rp]->velocityMove(command_velocity.data());
-        }
+    else if (isVelocityMode)
+    {
+        /*
+            Using IVelocityControl2
+        */
 
-        else if (isTorqueMode)
-        {
-            //
-        }
+        iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_VELOCITY);
+        // int jointVectorLength = 1;
+        // Vector jointVector(1, jointIndex);
+        // Vector cmdVector(1, cmd);
+        iVel[partIndex]->velocityMove(1, &jointIndex, &cmd);//jointVector.data(), cmdVector.data());
 
-        else{return false;}
+        /*
+            Another option is to use IVelocityControl and use:
+            iVel[partIndex]->velocityMove(jointIndex, cmd);
+
+        */
+
 
     }
-    return true;
-*/
 
-if (isPositionMode)
-{
-    iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_POSITION);
-    iPos[partIndex]->positionMove(jointIndex, cmd);
-}
+    else if (isTorqueMode)
+    {
+        iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_TORQUE);
+        iTrq[partIndex]->setRefTorque(jointIndex, cmd);
+    }
 
-else if (isVelocityMode)
-{
-    /*
-        Using IVelocityControl2
-    */
-
-    iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_VELOCITY);
-    // int jointVectorLength = 1;
-    // Vector jointVector(1, jointIndex);
-    // Vector cmdVector(1, cmd);
-    iVel[partIndex]->velocityMove(1, &jointIndex, &cmd);//jointVector.data(), cmdVector.data());
-
-    /*
-        Another option is to use IVelocityControl and use:
-        iVel[partIndex]->velocityMove(jointIndex, cmd);
-
-    */
-
-
-}
-
-else if (isTorqueMode)
-{
-    iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_TORQUE);
-    iTrq[partIndex]->setRefTorque(jointIndex, cmd);
-}
-
-else{return false;}
+    else{return false;}
 
 return true;
 
@@ -673,39 +654,7 @@ void CtrlThread::sendPidGains()
     gainsPort_out.write(gainsBottle_out);
 }
 
-//
-/*
-void CtrlThread::createPidLog()
-{
-    std::string directoryName = "PID_GAIN_LOGS";
-    baseFilePath += "/"+directoryName+"/" + currentDateTime() + "/";
-    // Make directory if it doesn't already exist
-    if (!boost::filesystem::exists(baseFilePath))
-        boost::filesystem::create_directories(baseFilePath);
 
-
-    pidLogFilePath = baseFilePath + "/jointPidGains"+extension;
-    pidFile.open(pidLogFilePath.c_str());
-    pidFile.close();
-}
-
-void CtrlThread::writeToPidLog()
-{
-
-    // std::ostringstream absStrs,
-    // absStrs << absoluteT;
-    // std::string absStr = absStrs.str();
-
-
-
-    pidFile.open(pidLogFilePath.c_str(), std::ios::app);
-    pidFile << "test" << std::endl;
-    pidFile.close();
-
-
-
-}
-*/
 
 
 const std::string CtrlThread::currentDateTime()
@@ -729,7 +678,7 @@ void CtrlThread::resizeDataVectors()
     data_input.clear();
     data_response.clear();
 
-    int storageSize = 200;
+    int storageSize = 200*signalDuration; //100 thread runs per second * signalDuration * 2 for safety
     data_time.resize(storageSize);
     data_input.resize(storageSize);
     data_response.resize(storageSize);
@@ -878,4 +827,16 @@ void CtrlThread::sendDataToGui()
     dataPort_out.write(dataBottle_out);
 
     std::cout << "data sent\n-----\n" << std::endl;
+}
+
+
+bool CtrlThread::jointLimitsReached()
+{
+    while(!iEnc[partIndex]->getEncoders(encoders[partIndex].data())){Time::delay(0.001);}
+
+    if(encoders[partIndex][jointIndex]<=jointLimitsLower[partIndex][jointIndex]){return true;}
+    else if (encoders[partIndex][jointIndex]>=jointLimitsUpper[partIndex][jointIndex]){return true;}
+    else{return false;}
+
+
 }
