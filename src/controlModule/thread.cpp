@@ -48,9 +48,10 @@
 
 
 
-CtrlThread::CtrlThread(const double period, const std::string Robot_Name) :
+CtrlThread::CtrlThread(const double period, const std::string Robot_Name, const std::string Excluded_Part) :
     RateThread(int(period*1000.0)),
-    robotName(Robot_Name)
+    robotName(Robot_Name),
+    excludedPart(Excluded_Part)
 {
     if (robotName.size()==0) {
         std::cout << "[WARNING] Robot name was not initialized. Defaulting to robotName=icubGazeboSim." << std::endl;
@@ -85,6 +86,14 @@ bool CtrlThread::threadInit()
     robotParts.push_back("right_arm");
     robotParts.push_back("left_leg");
     robotParts.push_back("right_leg");
+
+    if (excludedPart.size()!=0) {
+        for(stVecIt=robotParts.begin(); stVecIt!=robotParts.end(); stVecIt++){
+            if (excludedPart == *stVecIt){
+                robotParts.erase(stVecIt);
+            }
+        }
+    }
 
     numRobotParts = robotParts.size();
     nJoints.resize(numRobotParts);
@@ -619,7 +628,6 @@ void CtrlThread::parseIncomingSignalProperties(Bottle *newSignalPropertiesMessag
 
 void CtrlThread::updatePidInformation()
 {
-    std::cout << "updating PID information" << std::endl;
     Pid currentPid;
 
     if (iPids[partIndex]==NULL) {
@@ -629,9 +637,7 @@ void CtrlThread::updatePidInformation()
 
     bool res;
     if(isPositionMode){
-        std::cout << "Test 1" << std::endl;
         res = iPids[partIndex]->getPid(jointIndex, &currentPid);
-        std::cout << "Test 2" << std::endl;
     }
     else if (isVelocityMode) {
         res = iVel[partIndex]->getVelPid(jointIndex, &currentPid);
@@ -646,11 +652,8 @@ void CtrlThread::updatePidInformation()
 
     if(res)
     {
-        std::cout << "Getting kp" << std::endl;
         Kp_thread = currentPid.kp;
-        std::cout << "Getting kd" << std::endl;
         Kd_thread = currentPid.kd;
-        std::cout << "Getting ki" << std::endl;
         Ki_thread = currentPid.ki;
     }
     else{std::cout << "[ERROR] Couldn't retrieve PID from part "<<partIndex << ", joint " << jointIndex<< std::endl;}

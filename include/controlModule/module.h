@@ -10,6 +10,8 @@ class CtrlModule: public RFModule
 {
     protected:
         CtrlThread *thr;
+        std::string robotName;
+        std::string excludedPart;
 
     public:
         virtual bool configure(ResourceFinder &rf);

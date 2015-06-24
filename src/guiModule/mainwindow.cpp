@@ -48,7 +48,7 @@
 using namespace yarp::os;
 
 
-MainWindow::MainWindow(QWidget *parent) :
+MainWindow::MainWindow(yarp::os::ResourceFinder &rf, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
@@ -65,6 +65,29 @@ MainWindow::MainWindow(QWidget *parent) :
     signalDuration_TOR_DEFAULT = 0.5;
 
 
+    partsListVector.push_back("head");
+    partsListVector.push_back("torso");
+    partsListVector.push_back("left_arm");
+    partsListVector.push_back("right_arm");
+    partsListVector.push_back("left_leg");
+    partsListVector.push_back("right_leg");
+
+
+
+
+    if( rf.check("exclude") )
+    {
+        std::string excludedPart = rf.find("exclude").asString().c_str();
+
+        if (excludedPart.size()!=0) {
+            for(int i=0; i<partsListVector.size(); i++){
+                if (excludedPart == partsListVector[i]){
+                    doExcludePart = true;
+                    excludedPartIndex = i;
+                }
+            }
+        }else{doExcludePart = false; excludedPartIndex = 1000;}
+    }
 
 
 
@@ -121,19 +144,15 @@ MainWindow::MainWindow(QWidget *parent) :
 
     std::cout << "Setting signal properties to default values...";
     setSignalPropertiesToDefaults();
-    std::cout << "\tdone." << std::endl;
 
     std::cout << "initializing GUI...";
     initializeGui();
-    std::cout << "\tdone." << std::endl;
 
     std::cout << "Getting PID Gains...";
     getPidGains();
-    std::cout << "\tdone." << std::endl;
 
     std::cout << "Creating data logs...";
     createDataLogs();
-    std::cout << "\tdone." << std::endl;
 
 
     initFinished = true;
@@ -226,6 +245,10 @@ void MainWindow::addPartsToList()
     ui->partList->addItem("3-right_arm");
     ui->partList->addItem("4-left_leg");
     ui->partList->addItem("5-right_leg");
+
+    if(doExcludePart){
+        ui->partList->removeItem(excludedPartIndex);
+    }
 }
 
 void MainWindow::on_gainTestButton_clicked()

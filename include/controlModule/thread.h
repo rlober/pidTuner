@@ -96,6 +96,7 @@ class CtrlThread: public RateThread
         yarp::dev::IControlMode2 *iMode;
 
         std::vector<std::string> robotParts;
+        std::vector<std::string>::iterator stVecIt;
 
         std::string currentRobotPart, robotName, baseFilePath, extension, pidLogFilePath;
 
@@ -109,14 +110,14 @@ class CtrlThread: public RateThread
 
         double stationaryTorque;
 
-
+        std::string excludedPart;
 
 
 
 
 
     public:
-        CtrlThread(const double period, const std::string Robot_Name);
+        CtrlThread(const double period, const std::string Robot_Name, const std::string Excluded_Part);
 
         virtual bool threadInit();
 

@@ -40,6 +40,8 @@
 #include <yarp/os/BufferedPort.h>
 #include <yarp/os/Port.h>
 #include <yarp/os/all.h>
+#include <yarp/os/ResourceFinder.h>
+
 
 #include <tinyxml.h>
 
@@ -66,7 +68,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(yarp::os::ResourceFinder &rf, QWidget *parent = 0);
     ~MainWindow();
 
     void initializeGui();
@@ -130,6 +132,9 @@ private:
     int controlMode, partIndex, jointIndex;
 
     bool initFinished;
+    std::vector<std::string> partsListVector;
+    bool doExcludePart;
+    int excludedPartIndex;
 
 
     double Kp_new, Kd_new, Ki_new;

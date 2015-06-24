@@ -1,5 +1,6 @@
 #include "module.h"
 #include <yarp/os/Network.h>
+#include <yarp/os/ResourceFinder.h>
 
 
 using namespace yarp::os;
@@ -11,9 +12,19 @@ bool CtrlModule::configure(ResourceFinder &rf)
 {
     Time::turboBoost();
 
-    ConstString robotName=rf.find("robot").asString();
-    std::cout << robotName.c_str() << std::endl;
-    thr=new CtrlThread(CTRL_THREAD_PER, robotName);
+    if( rf.check("robot") )
+    {
+        robotName = rf.find("robot").asString().c_str();
+        std::cout << "\n\nRobot name is: " << robotName << "\n" << std::endl;
+    }
+
+    if( rf.check("exclude") )
+    {
+        excludedPart = rf.find("exclude").asString().c_str();
+        std::cout << "\n\nExcluding: " << excludedPart << "\n" << std::endl;
+    }
+
+    thr=new CtrlThread(CTRL_THREAD_PER, robotName, excludedPart);
     if (!thr->start())
     {
         delete thr;
@@ -55,6 +66,16 @@ int main(int argc, char *argv[])
 {
     // we need to initialize the drivers list
     // YARP_REGISTER_DEVICES(icubmod)
+    ResourceFinder rf;
+    rf.configure(argc,argv);
+
+    if (rf.check("help"))
+    {
+        std::cout<< "Possible parameters" << "\n\n";
+        std::cout<< "\t--robot :Robot name. Set to icub by default." <<std::endl;
+        std::cout<< "\t--exclude :A part you wish to exclude. Set to empty by default." <<std::endl;
+        return 0;
+    }
 
 
     Network yarp;
@@ -66,6 +87,5 @@ int main(int argc, char *argv[])
 
     CtrlModule mod;
 
-    ResourceFinder rf;
     return mod.runModule(rf);
 }

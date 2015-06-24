@@ -28,13 +28,24 @@
 
 #include "mainwindow.h"
 #include <QApplication>
-
+#include <yarp/os/ResourceFinder.h>
 
 int main(int argc, char *argv[])
 {
+
+    yarp::os::ResourceFinder rf;
+    rf.configure(argc,argv);
+
+    if (rf.check("help"))
+    {
+        std::cout<< "Possible parameters" << "\n\n";
+        std::cout<< "\t--exclude :A part you wish to exclude. Set to empty by default." <<std::endl;
+        return 0;
+    }
+
     QApplication a(argc, argv);
 
-    MainWindow w;
+    MainWindow w(rf);
     w.setWindowTitle("PID Tuner");
     w.show();
 
