@@ -76,3 +76,6 @@ target_link_libraries(${PROJECTNAME_CONTROLLER} ${YARP_LIBRARIES} ${Boost_LIBRAR
 
 add_executable(${PROJECTNAME_GUI} ${gui_source} ${gui_header})
 target_link_libraries(${PROJECTNAME_GUI} Qt5::Widgets Qt5::PrintSupport ${YARP_LIBRARIES} ${TinyXML_LIBRARIES})
+
+INSTALL(TARGETS ${PROJECTNAME_CONTROLLER} DESTINATION bin)
+INSTALL(TARGETS ${PROJECTNAME_GUI} DESTINATION bin)
