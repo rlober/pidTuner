@@ -398,7 +398,7 @@ bool CtrlThread::sendJointCommand(double cmd)
 
     if (isPositionMode)
     {
-        iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_POSITION);
+        // iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_POSITION);
         iPos[partIndex]->positionMove(jointIndex, cmd);
     }
 
@@ -408,10 +408,7 @@ bool CtrlThread::sendJointCommand(double cmd)
             Using IVelocityControl2
         */
 
-        iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_VELOCITY);
-        // int jointVectorLength = 1;
-        // Vector jointVector(1, jointIndex);
-        // Vector cmdVector(1, cmd);
+        // iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_VELOCITY);
         iVel[partIndex]->velocityMove(1, &jointIndex, &cmd);//jointVector.data(), cmdVector.data());
 
         /*
@@ -425,7 +422,7 @@ bool CtrlThread::sendJointCommand(double cmd)
 
     else if (isTorqueMode)
     {
-        iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_TORQUE);
+        // iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_TORQUE);
         iTrq[partIndex]->setRefTorque(jointIndex, cmd);
     }
 
@@ -504,6 +501,19 @@ void CtrlThread::parseIncomingGains(Bottle *newGainMessage)
         }
 
         applyExcitationSignal = true;
+
+        if (isPositionMode)
+        {
+            iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_POSITION_DIRECT);
+        }
+        else if (isVelocityMode)
+        {
+            iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_VELOCITY);
+        }
+        else if (isTorqueMode)
+        {
+            iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_TORQUE);
+        }
 
     }
 
