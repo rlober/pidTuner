@@ -498,6 +498,12 @@ void CtrlThread::parseIncomingGains(Bottle *newGainMessage)
             {
                 Time::delay(0.001);
             }
+        }else if (isPositionMode)
+        {
+            while(!iEnc[partIndex]->getEncoder(jointIndex, &homeVectors[partIndex][jointIndex] ))
+            {
+                Time::delay(0.001);
+            }
         }
 
         applyExcitationSignal = true;
@@ -505,6 +511,7 @@ void CtrlThread::parseIncomingGains(Bottle *newGainMessage)
         if (isPositionMode)
         {
             iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_POSITION_DIRECT);
+            iPos[partIndex]->setRefSpeed(jointIndex, 10.0);
         }
         else if (isVelocityMode)
         {
@@ -766,6 +773,9 @@ bool CtrlThread::excitationSignal(double &cmd)
 
             finalizeDataVectors();
             applyExcitationSignal = false;
+
+            iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_POSITION);
+
             return true;
         }
 
