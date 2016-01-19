@@ -57,7 +57,7 @@ CtrlThread::CtrlThread(const double period, const std::string Robot_Name, const 
         std::cout << "[WARNING] Robot name was not initialized. Defaulting to robotName=icubGazeboSim." << std::endl;
         std::cout << "To set the robot name simply use: --robot [name of robot] when launching the pidTunerController. Remember, no brackets around the name of the robot." << std::endl;
 
-        robotName="icubGazeboSim";
+        robotName="icub";
     }
 }
 
@@ -66,7 +66,6 @@ CtrlThread::CtrlThread(const double period, const std::string Robot_Name, const 
 bool CtrlThread::threadInit()
 {
 
-    // robotName = "icubGazeboSim";
     extension = ".txt";
     baseFilePath = "/home/ryan/Desktop/";
 
