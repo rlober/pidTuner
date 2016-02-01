@@ -8,7 +8,6 @@ project(pidTuner)
 
 set(CMAKE_CXX_FLAGS "-fPIC")
 
-
 # Tell CMake to run moc when necessary:
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -26,17 +25,16 @@ if(DEFINED ENV{Qt5_DIR})
 else()
   find_package(Qt5Widgets REQUIRED)
   find_package(Qt5PrintSupport REQUIRED)
-
+  find_package(Qt5Core REQUIRED)
+  find_package(Qt5Gui REQUIRED)
 endif()
-
 
 find_package(YARP)
 find_package(ICUB)
 find_package(Boost COMPONENTS system filesystem REQUIRED)
-find_package(TinyXML)
+find_package(TinyXML QUIET)
 
 if (NOT TinyXML_FOUND)
-  message(WARNING "Couldn't find tinyXML using find_package. Attempting with PkgConfig...")
   find_package(PkgConfig REQUIRED)
   PKG_CHECK_MODULES(TinyXML tinyxml REQUIRED)
 endif()
@@ -50,16 +48,14 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${ICUB_LINK_FLAGS}")
 
 LINK_DIRECTORIES(${Boost_LIBRARY_DIRS})
 
-FILE(GLOB controller_source ./src/controlModule/*.cpp)
-FILE(GLOB controller_header ./include/controlModule/*.h)
+FILE(GLOB controller_source ${CMAKE_CURRENT_SOURCE_DIR}/src/controlModule/*.cpp)
+FILE(GLOB controller_header ${CMAKE_CURRENT_SOURCE_DIR}/include/controlModule/*.h)
 
-FILE(GLOB gui_source ./src/guiModule/*.cpp)
-FILE(GLOB gui_header ./include/guiModule/*.h)
+FILE(GLOB gui_source ${CMAKE_CURRENT_SOURCE_DIR}/src/guiModule/*.cpp )
+FILE(GLOB gui_header ${CMAKE_CURRENT_SOURCE_DIR}/include/guiModule/*.h)
 
-# SOURCE_GROUP("Source Files" FILES ${controller_source} ${gui_source})
-# SOURCE_GROUP("Header Files" FILES ${controller_header} ${gui_header})
-
-
+SOURCE_GROUP("Source Files" FILES ${controller_source} ${gui_source})
+SOURCE_GROUP("Header Files" FILES ${controller_header} ${gui_header})
 
 include_directories(${PROJECT_SOURCE_DIR}/include/controlModule
                     ${PROJECT_SOURCE_DIR}/include/guiModule
@@ -70,12 +66,11 @@ include_directories(${PROJECT_SOURCE_DIR}/include/controlModule
                     ${Qt5PrintSupport_INCLUDE_DIRS}
                     ${TinyXML_INCLUDE_DIRS})
 
-
 add_executable(${PROJECTNAME_CONTROLLER} ${controller_source} ${controller_header})
-target_link_libraries(${PROJECTNAME_CONTROLLER} ${YARP_LIBRARIES} ${Boost_LIBRARIES} Qt5::Widgets Qt5::PrintSupport )#icubmod )
+target_link_libraries(${PROJECTNAME_CONTROLLER} ${YARP_LIBRARIES} ${Boost_LIBRARIES} ${Qt5Widgets_LIBRARIES} ${Qt5PrintSupport_LIBRARIES} )#icubmod )
 
 add_executable(${PROJECTNAME_GUI} ${gui_source} ${gui_header})
-target_link_libraries(${PROJECTNAME_GUI} Qt5::Widgets Qt5::PrintSupport ${YARP_LIBRARIES} ${TinyXML_LIBRARIES})
+target_link_libraries(${PROJECTNAME_GUI} ${Qt5Widgets_LIBRARIES} ${Qt5PrintSupport_LIBRARIES}  ${YARP_LIBRARIES} ${TinyXML_LIBRARIES})
 
 INSTALL(TARGETS ${PROJECTNAME_CONTROLLER} DESTINATION bin)
 INSTALL(TARGETS ${PROJECTNAME_GUI} DESTINATION bin)
