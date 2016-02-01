@@ -163,7 +163,7 @@ MainWindow::MainWindow(yarp::os::ResourceFinder &rf, QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
-    delete ui;
+    //delete ui;
 }
 
 void MainWindow::setCurrentPartAndJoint()
@@ -209,8 +209,8 @@ void MainWindow::createPlot()
     // ui->posPlot->yAxis->setRange(0, 1);
     // add title layout element:
     ui->posPlot->plotLayout()->insertRow(0);
-    plotTitle = new QCPPlotTitle(ui->posPlot, ui->jointList->currentText());
-    ui->posPlot->plotLayout()->addElement(0, 0, plotTitle);
+    plotTitle.reset( new QCPPlotTitle(ui->posPlot, ui->jointList->currentText()));
+    ui->posPlot->plotLayout()->addElement(0, 0, plotTitle.get());
     QFont titleFont= font();
     plotTitle->setFont(titleFont);
 

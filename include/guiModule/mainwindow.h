@@ -42,6 +42,7 @@
 #include <yarp/os/all.h>
 #include <yarp/os/ResourceFinder.h>
 
+#include <boost/scoped_ptr.hpp>
 
 #include <tinyxml.h>
 
@@ -101,7 +102,7 @@ private slots:
     void on_savePlotButton_clicked();
 
 private:
-    Ui::MainWindow *ui;
+    boost::scoped_ptr<Ui::MainWindow> ui;
 
 
 
@@ -126,7 +127,7 @@ private:
 
     //Variables
     QString yPlotLabel;
-    QCPPlotTitle* plotTitle;
+    boost::scoped_ptr<QCPPlotTitle> plotTitle;
 
     bool isOnlyMajorJoints, gainsHaveBeenChanged;
     int controlMode, partIndex, jointIndex;
