@@ -1,5 +1,6 @@
 #include <yarp/os/RFModule.h>
 #include "thread.h"
+#include <boost/scoped_ptr.hpp>
 
 #define CTRL_THREAD_PER         0.02    // [s]
 
@@ -9,7 +10,7 @@ using namespace yarp::dev;
 class CtrlModule: public RFModule
 {
     protected:
-        CtrlThread *thr;
+        boost::scoped_ptr<CtrlThread> thr;
         std::string robotName;
         std::string excludedPart;
 

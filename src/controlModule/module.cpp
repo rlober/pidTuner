@@ -24,10 +24,9 @@ bool CtrlModule::configure(ResourceFinder &rf)
         std::cout << "\n\nExcluding: " << excludedPart << "\n" << std::endl;
     }
 
-    thr=new CtrlThread(CTRL_THREAD_PER, robotName, excludedPart);
+    thr.reset(new CtrlThread(CTRL_THREAD_PER, robotName, excludedPart));
     if (!thr->start())
     {
-        delete thr;
         return false;
     }
 
@@ -37,8 +36,6 @@ bool CtrlModule::configure(ResourceFinder &rf)
 bool CtrlModule::close()
 {
     thr->stop();
-    delete thr;
-
     return true;
 }
 
