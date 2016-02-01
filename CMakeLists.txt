@@ -47,8 +47,6 @@ include(iCubHelpers)
 
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${ICUB_LINK_FLAGS}")
 
-LINK_DIRECTORIES(${Boost_LIBRARY_DIRS})
-
 FILE(GLOB controller_source ${CMAKE_CURRENT_SOURCE_DIR}/src/controlModule/*.cpp)
 FILE(GLOB controller_header ${CMAKE_CURRENT_SOURCE_DIR}/include/controlModule/*.h)
 
@@ -83,7 +81,8 @@ target_link_libraries(${PROJECTNAME_GUI}
     ${Qt5Gui_LIBRARIES}
     ${Qt5PrintSupport_LIBRARIES}
     ${YARP_LIBRARIES}
-    ${TinyXML_LIBRARIES})
+    ${TinyXML_LIBRARIES}
+    ${Boost_LIBRARIES})
 
 INSTALL(TARGETS ${PROJECTNAME_CONTROLLER} DESTINATION bin)
 INSTALL(TARGETS ${PROJECTNAME_GUI} DESTINATION bin)
