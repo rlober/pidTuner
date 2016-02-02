@@ -30,7 +30,7 @@
 */
 
 #include "guiModule/mainwindow.h"
-#include "guiModule/ui_mainwindow.h"
+#include "ui_mainwindow.h"
 
 #include <yarp/sig/Vector.h>
 #include <yarp/math/Math.h>
