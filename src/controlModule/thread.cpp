@@ -30,7 +30,7 @@
 
 
 
-#include "thread.h"
+#include "controlModule/thread.h"
 #include <math.h>
 #include <yarp/logger/YarpLogger.h>
 

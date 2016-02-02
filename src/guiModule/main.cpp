@@ -26,7 +26,7 @@
 * along with pidTuner.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "mainwindow.h"
+#include "guiModule/mainwindow.h"
 #include <QApplication>
 #include <yarp/os/ResourceFinder.h>
 

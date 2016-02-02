@@ -64,8 +64,6 @@ SOURCE_GROUP("HEADERS" FILES ${controller_header} ${gui_header})
 SOURCE_GROUP("FORMS" FILES ${gui_forms})
 
 include_directories(${PROJECT_SOURCE_DIR}/include
-                    ${PROJECT_SOURCE_DIR}/include/controlModule
-                    ${PROJECT_SOURCE_DIR}/include/guiModule
                     ${ICUB_INCLUDE_DIRS}
                     ${YARP_INCLUDE_DIRS}
                     ${Boost_INCLUDE_DIR}

@@ -1,4 +1,4 @@
-#include "module.h"
+#include "controlModule/module.h"
 #include <yarp/os/Network.h>
 #include <yarp/os/ResourceFinder.h>
 
