@@ -37,9 +37,9 @@
 #define DEG_TO_RAD M_PI / 180.
 #define RAD_TO_DEG 180. / M_PI
 
-#define POSITION_MODE 0
-#define VELOCITY_MODE 1
-#define TORQUE_MODE 2
+static const int POSITION_MODE = 0;
+static const int VELOCITY_MODE = 1;
+static const int TORQUE_MODE = 2;
 
 #define SIG_STEP 0
 #define SIG_SIGN 1
@@ -125,9 +125,9 @@ bool CtrlThread::threadInit()
     jointLimitsLower.resize(numRobotParts);
     jointLimitsUpper.resize(numRobotParts);
 
-    openInterfaces();
+    if(!openInterfaces()) return false;
 
-    goToHome();
+    if(!goToHome()) return false;
 
     jointCommandsHaveBeenUpdated = false;
     controlThreadFinished = false;
@@ -139,20 +139,21 @@ bool CtrlThread::threadInit()
 
 
     //Open yarp ports
-    gainsBufPort_in.open("/pidTunerController/gains/in");
-    gainsPort_out.open("/pidTunerController/gains/out");
+    bool ok = true;
+    ok &= gainsBufPort_in.open("/pidTunerController/gains/in");
+    ok &= gainsPort_out.open("/pidTunerController/gains/out");
 
-    goToHomeBufPort_in.open("/pidTunerController/goToHome/in");
+    ok &= goToHomeBufPort_in.open("/pidTunerController/goToHome/in");
 
-    robotPartAndJointBufPort_in.open("/pidTunerController/partAndJointIndexes/in");
+    ok &= robotPartAndJointBufPort_in.open("/pidTunerController/partAndJointIndexes/in");
 
-    controlModeBufPort_in.open("/pidTunerController/controlMode/in");
+    ok &= controlModeBufPort_in.open("/pidTunerController/controlMode/in");
 
-    dataPort_out.open("/pidTunerController/data/out");
+    ok &= dataPort_out.open("/pidTunerController/data/out");
 
-    signalPropertiesBufPort_in.open("/pidTunerController/signalProperties/in");
+    ok &= signalPropertiesBufPort_in.open("/pidTunerController/signalProperties/in");
 
-    return true;
+    return ok;
 
 }
 
@@ -268,7 +269,7 @@ void CtrlThread::threadRelease()
 
 bool CtrlThread::openInterfaces()
 {
-    log.info() << " Opening Interfaces:\n";
+    log.info() << " Opening Interfaces:";
     for (int rp=0; rp<numRobotParts; rp++)
     {
         std::string curRobPart = robotParts[rp];

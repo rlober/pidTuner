@@ -68,9 +68,9 @@ int main(int argc, char *argv[])
 
     if (rf.check("help"))
     {
-        std::cout<< "Possible parameters" << "\n\n";
-        std::cout<< "\t--robot :Robot name. Set to icub by default." <<std::endl;
-        std::cout<< "\t--exclude :A part you wish to exclude. Set to empty by default." <<std::endl;
+        yarp::os::Log().error() << "Possible parameters \n";
+        yarp::os::Log().error()<< "\t--robot :Robot name. Set to icub by default.";
+        yarp::os::Log().error()<< "\t--exclude :A part you wish to exclude. Set to empty by default.";
         return 0;
     }
 
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
     Network yarp;
     if (!yarp.checkNetwork())
     {
-        fprintf(stdout,"Error: yarp server does not seem available\n");
+        yarp::os::Log().error() << "Error: yarp server does not seem available";
         return -1;
     }
 
