@@ -13,7 +13,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 # As moc files are generated in the binary dir, tell CMake
 # to always look for includes there:
-
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 if(DEFINED ENV{Qt5_DIR})
   set(CODYCO_QT_CMAKE_PATH $ENV{Qt5_DIR})
