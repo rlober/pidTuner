@@ -128,7 +128,7 @@ class CtrlThread: public RateThread
         virtual void threadRelease();
 
         bool openInterfaces();
-
+        void setRecordDirectory(const std::string& dir);
         bool goToHome();
         bool sendJointCommand(double cmd);
         void setCommandToHome();
@@ -155,6 +155,7 @@ class CtrlThread: public RateThread
 
 
     private:
+        yarp::os::Log log;
         double Kp_thread, Kd_thread, Ki_thread;
         void sendPidGains();
         void parseIncomingGains(Bottle *newGainMessage);

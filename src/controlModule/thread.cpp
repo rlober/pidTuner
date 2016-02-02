@@ -32,6 +32,7 @@
 
 #include "thread.h"
 #include <math.h>
+#include <yarp/logger/YarpLogger.h>
 
 #define DEG_TO_RAD M_PI / 180.
 #define RAD_TO_DEG 180. / M_PI
@@ -46,7 +47,9 @@
 #define SIG_SQUARE 3
 #define SIG_DIRAC 4
 
-
+using namespace boost;
+using namespace boost::filesystem;
+using namespace std;
 
 CtrlThread::CtrlThread(const double period, const std::string Robot_Name, const std::string Excluded_Part) :
     RateThread(int(period*1000.0)),
@@ -54,20 +57,29 @@ CtrlThread::CtrlThread(const double period, const std::string Robot_Name, const 
     excludedPart(Excluded_Part)
 {
     if (robotName.size()==0) {
-        std::cout << "[WARNING] Robot name was not initialized. Defaulting to robotName=icubGazeboSim." << std::endl;
-        std::cout << "To set the robot name simply use: --robot [name of robot] when launching the pidTunerController. Remember, no brackets around the name of the robot." << std::endl;
+        log.info() << " [WARNING] Robot name was not initialized. Defaulting to robotName=icubGazeboSim.";
+        log.info() << " To set the robot name simply use: --robot [name of robot] when launching the pidTunerController. Remember, no brackets around the name of the robot.";
 
         robotName="icub";
     }
+    baseFilePath = boost::filesystem::current_path().string();
+    boost::filesystem::path full_path( baseFilePath );
+    log.info() << " Current record path is : "<<baseFilePath;
 }
 
-
+void CtrlThread::setRecordDirectory(const std::string& dir)
+{
+    if(boost::filesystem::is_directory(dir))
+        this->baseFilePath = dir;
+    else
+        log.error() << " Path "<<dir<<" does not exists";
+}
 
 bool CtrlThread::threadInit()
 {
 
     extension = ".txt";
-    baseFilePath = "/home/ryan/Desktop/";
+    //baseFilePath = "/home/ryan/Desktop/";
 
 
     isPositionMode  = true;
@@ -147,9 +159,9 @@ bool CtrlThread::threadInit()
 void CtrlThread::afterStart(bool s)
 {
     if (s)
-        fprintf(stdout,"Thread started successfully\n");
+        log.info() << " Thread started successfully";
     else
-        fprintf(stdout,"Thread did not start\n");
+        log.error() << " Thread did not start";
 }
 
 /*********************************************************
@@ -161,7 +173,7 @@ void CtrlThread::run()
     // Check if new gains have come in or if the user wants the current gains
     Bottle *gainsMessage = gainsBufPort_in.read(false);
     if (gainsMessage!=NULL) {
-        std::cout << "Received gains message." << std::endl;
+        log.info() << " Received gains message.";
         resizeDataVectors();
         parseIncomingGains(gainsMessage);
         sendPidGains();
@@ -170,7 +182,7 @@ void CtrlThread::run()
     // Check if the user wants to go to Home Pose
     Bottle *goToHomeMessage = goToHomeBufPort_in.read(false);
     if (goToHomeMessage!=NULL) {
-        std::cout << "Received go to home message." << std::endl;
+        log.info() << " Received go to home message.";
         if(goToHomeMessage->get(0).asInt()==1){
             // setCommandToHome();
             goToHome();
@@ -179,7 +191,7 @@ void CtrlThread::run()
 
     Bottle *robotPartAndJointMessage = robotPartAndJointBufPort_in.read(false);
     if (robotPartAndJointMessage!=NULL) {
-        std::cout << "Received part and joint index message." << std::endl;
+        log.info() << " Received part and joint index message.";
         partIndex = robotPartAndJointMessage->get(0).asInt();
         jointIndex = robotPartAndJointMessage->get(1).asInt();
         updatePidInformation();
@@ -187,14 +199,14 @@ void CtrlThread::run()
 
     Bottle *controlModeMessage = controlModeBufPort_in.read(false);
     if (controlModeMessage!=NULL) {
-        std::cout << "Received control mode message." << std::endl;
+        log.info() << " Received control mode message.";
         parseIncomingControlMode(controlModeMessage);
         updatePidInformation();
     }
 
     Bottle *signalPropertiesMessage = signalPropertiesBufPort_in.read(false);
     if (signalPropertiesMessage!=NULL) {
-        std::cout << "Received signal properties message." << std::endl;
+        log.info() << " Received signal properties message.";
         parseIncomingSignalProperties(signalPropertiesMessage);
     }
 
@@ -215,7 +227,7 @@ void CtrlThread::run()
             if(jointLimitsReached()){
                 finalizeDataVectors();
                 applyExcitationSignal = false;
-                std::cout << "\n\n[WARNING] Joint limit has been reached. Potentially unsafe behavior has been detected so I am stopping this test!\n" << std::endl;
+                log.warning() << " Joint limit has been reached. Potentially unsafe behavior has been detected so I am stopping this test!\n";
             }
 
             if(dataReadyForDelivery){
@@ -240,10 +252,10 @@ void CtrlThread::threadRelease()
 {
 
 
-    std::cout << "\n\n\t<-------------------------->\n";
+    log.info() << " \n\n\t<-------------------------->\n";
     while(!goToHome())
     {
-        // std::cout << "Going to Home Pose\n";
+        // log.info() << " Going to Home Pose\n";
         Time::delay(0.1);
     }
 
@@ -256,12 +268,12 @@ void CtrlThread::threadRelease()
 
 bool CtrlThread::openInterfaces()
 {
-    std::cout << "\n\nOpening Interfaces:\n";
+    log.info() << " Opening Interfaces:\n";
     for (int rp=0; rp<numRobotParts; rp++)
     {
         std::string curRobPart = robotParts[rp];
 
-        std::cout << curRobPart << std::endl;
+        log.info() <<" -- "<<curRobPart;
 
         Property options;
         options.put("device", "remote_controlboard");
@@ -271,8 +283,7 @@ bool CtrlThread::openInterfaces()
 
         PolyDriver *tmp_robotDevice = new PolyDriver(options);
         if (!tmp_robotDevice->isValid()) {
-            printf("Device not available.  Here are the known devices:\n");
-            printf("%s", Drivers::factory().toString().c_str());
+            log.error() << " Device not available.  Here are the known devices: \n" <<Drivers::factory().toString();
             return false;
         }
 
@@ -281,21 +292,21 @@ bool CtrlThread::openInterfaces()
 
         bool ok;
 
-        std::cout << "\nViewing Devices:" << std::endl;
+        log.info() << " \nViewing Devices:";
         ok = robotDevice[rp]->view(iPos[rp]);
-        std::cout << "iPos created" << std::endl;
+        log.info() << " iPos created";
         ok = ok && robotDevice[rp]->view(iEnc[rp]);
-        std::cout << "iEnc created" << std::endl;
+        log.info() << " iEnc created";
         ok = ok && robotDevice[rp]->view(iVel[rp]);
-        std::cout << "iVel created" << std::endl;
+        log.info() << " iVel created";
         ok = ok && robotDevice[rp]->view(iTrq[rp]);
-        std::cout << "iTrq created" << std::endl;
+        log.info() << " iTrq created";
         ok = ok && robotDevice[rp]->view(iLims[rp]);
-        std::cout << "iLims created" << std::endl;
+        log.info() << " iLims created";
         ok = ok && robotDevice[rp]->view(iPids[rp]);
-        std::cout << "iPids created" << std::endl;
+        log.info() << " iPids created";
         ok = ok && robotDevice[rp]->view(iCtrl[rp]);
-        std::cout << "iCtrl created" << std::endl;
+        log.info() << " iCtrl created";
 
 
 
@@ -352,7 +363,7 @@ bool CtrlThread::openInterfaces()
             Time::delay(delayTime);
             timeWaiting += delayTime;
             if (timeWaiting > timeout) {
-                std::cout << "[ERR] (line "<< __LINE__<< ") Timeout while waiting for "<< curRobPart <<" encoder data. Skipping." << std::endl;
+                log.error() << " (line "<< __LINE__<< ") Timeout while waiting for "<< curRobPart <<" encoder data. Skipping.";
             }
         }
 
@@ -366,7 +377,7 @@ bool CtrlThread::openInterfaces()
 
 bool CtrlThread::goToHome()
 {
-    std::cout<<"\nMoving to home position.\n";
+    log.info() <<" Moving to home position.\n";
 
 
     for (int rp=0; rp<numRobotParts; rp++)
@@ -389,7 +400,7 @@ bool CtrlThread::goToHome()
         }
 
     }
-    std::cout << "Finished." << std::endl;
+    log.info() << " Finished.";
     return true;
 }
 
@@ -442,7 +453,7 @@ void CtrlThread::setCommandToHome()
         {
             iCtrl[rp]->setControlMode(jnt, VOCAB_CM_POSITION);
             command[rp][jnt] = homeVectors[rp][jnt];
-            std::cout << "Going to home configuration..." << std::endl;
+            log.info() << " Going to home configuration...";
         }
     }
     jointCommandsHaveBeenUpdated = true;
@@ -454,11 +465,11 @@ void CtrlThread::parseIncomingGains(Bottle *newGainMessage)
     int messageIndicator = newGainMessage->get(0).asInt();
     if (messageIndicator == 1)
     {
-        std::cout   << "trying to set part, "<<partIndex<<" & joint, "<< jointIndex << " to PID:\n"
+        log.info()   << " Trying to set part, "<<partIndex<<" & joint, "<< jointIndex << " to PID:\n"
                     << "Kp = " << newGainMessage->get(1).asDouble()
                     << " Kd = " << newGainMessage->get(2).asDouble()
                     << " Ki = " << newGainMessage->get(3).asDouble()
-                    << std::endl;
+                   ;
         Pid newPid;
         newPid.setKp(newGainMessage->get(1).asDouble());
         newPid.setKd(newGainMessage->get(2).asDouble());
@@ -467,28 +478,28 @@ void CtrlThread::parseIncomingGains(Bottle *newGainMessage)
         //send new Pid to device
 
         if (iPids[partIndex]==NULL) {
-            std::cout << "there is no iPid pointer here..." << std::endl;
+            log.error() << " there is no iPid pointer here...";
         }
         if(isPositionMode){
             if (!iPids[partIndex]->setPid(jointIndex, newPid)) {
-                std::cout<<"Position PID send failed...\n";
+                log.error()<<"Position PID send failed...";
             }
         }
         else if(isVelocityMode){
             if (!iVel[partIndex]->setVelPid(jointIndex, newPid)) {
-                std::cout<<"Velocity PID send failed...\n";
+                log.error()<<"Velocity PID send failed...";
             }
         }
         else if(isTorqueMode){
             if (!iTrq[partIndex]->setTorquePid(jointIndex, newPid)) {
-                std::cout<<"Torque PID send failed...\n";
+                log.error()<<"Torque PID send failed...";
             }
         }
 
         //Get those gains from the device to make sure they set properly
 
         updatePidInformation();
-        std::cout<< "gains set to device:\nKp = "<< Kp_thread <<" Kd = "<< Kd_thread << " Ki = "<< Ki_thread <<"\n"<<std::endl;
+        log.info() << "gains set to device: \n" << " -- Kp = "<< Kp_thread <<" Kd = "<< Kd_thread << " Ki = "<< Ki_thread;
 
 
         triggerTime = Time::now();
@@ -534,28 +545,28 @@ void CtrlThread::parseIncomingControlMode(Bottle *newControlModeMessage)
             isPositionMode = true;
             isVelocityMode = false;
             isTorqueMode = false;
-            std::cout << "Switching to POSITION control." << std::endl;
+            log.info() << " Switching to POSITION control.";
             break;
 
         case VELOCITY_MODE:
             isPositionMode = false;
             isVelocityMode = true;
             isTorqueMode = false;
-            std::cout << "Switching to VELOCITY control." << std::endl;
+            log.info() << " Switching to VELOCITY control.";
             break;
 
         case TORQUE_MODE:
             isPositionMode = false;
             isVelocityMode = false;
             isTorqueMode = true;
-            std::cout << "Switching to TORQUE control." << std::endl;
+            log.info() << " Switching to TORQUE control.";
             break;
 
         default:
             isPositionMode = true;
             isVelocityMode = false;
             isTorqueMode = false;
-            std::cout << "[WARNING] Defaulting to POSITION control." << std::endl;
+            log.warning() << " Defaulting to POSITION control.";
             break;
     }
 
@@ -617,10 +628,10 @@ void CtrlThread::parseIncomingSignalProperties(Bottle *newSignalPropertiesMessag
         signalDuration = newSignalPropertiesMessage->get(3).asDouble();
         break;
     }
-    std::cout << "Received new signal properties:" << std::endl;
-    std::cout << "Signal Amplitude = " << signalAmplitude << std::endl;
-    std::cout << "Signal Start Time = " << signalStartTime << std::endl;
-    std::cout << "Signal Duration  = " << signalDuration << std::endl;
+    log.info() << " Received new signal properties:";
+    log.info() << " -- Signal Amplitude = " << signalAmplitude;
+    log.info() << " -- Signal Start Time = " << signalStartTime;
+    log.info() << " -- Signal Duration  = " << signalDuration;
 }
 
 void CtrlThread::updatePidInformation()
@@ -628,9 +639,9 @@ void CtrlThread::updatePidInformation()
     Pid currentPid;
 
     if (iPids[partIndex]==NULL) {
-        std::cout << "no iPid device" << std::endl;
+        log.error() << " no iPid device";
     }
-    else{std::cout << "trying to get PID from joint." << std::endl;}
+    else{log.info() << " trying to get PID from joint.";}
 
     bool res;
     if(isPositionMode){
@@ -644,7 +655,7 @@ void CtrlThread::updatePidInformation()
     }
 
     // if (currentPid==NULL) {
-    //     std::cout << "currentPid is NULL" << std::endl;
+    //     log.info() << " currentPid is NULL";
     // }
 
     if(res)
@@ -653,7 +664,7 @@ void CtrlThread::updatePidInformation()
         Kd_thread = currentPid.kd;
         Ki_thread = currentPid.ki;
     }
-    else{std::cout << "[ERROR] Couldn't retrieve PID from part "<<partIndex << ", joint " << jointIndex<< std::endl;}
+    else{log.error() << " Couldn't retrieve PID from part "<<partIndex << ", joint " << jointIndex;}
 
 }
 
@@ -794,7 +805,7 @@ double CtrlThread::getJointResponse()
     {
         while(!iEnc[partIndex]->getEncoders(encoders[partIndex].data()) )
         {
-            std::cout << "Waiting on Encoders..." << std::endl;
+            log.info() << " Waiting on Encoders...";
             Time::delay(0.001);
         }
         return encoders[partIndex][jointIndex];
@@ -820,7 +831,7 @@ void CtrlThread::sendDataToGui()
         the receiver when to listen. 0 = stop listening and 1 = start. The size of the
         vector is inferred from the number of messages sent with a first value of 1.
     */
-    std::cout << "sending data" << std::endl;
+    log.info() << " sending data";
 
     for (int i=0; i<iterationCounter; i++)
     {
@@ -845,7 +856,7 @@ void CtrlThread::sendDataToGui()
     dataBottle_out.addInt(0);
     dataPort_out.write(dataBottle_out);
 
-    std::cout << "data sent\n-----\n" << std::endl;
+    log.info() << " Data sent\n-----\n";
 }
 
 
