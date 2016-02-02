@@ -30,6 +30,8 @@
 #include <QApplication>
 #include <yarp/os/ResourceFinder.h>
 
+using namespace boost;
+
 int main(int argc, char *argv[])
 {
 
@@ -38,18 +40,19 @@ int main(int argc, char *argv[])
 
     if (rf.check("help"))
     {
-        std::cout<< "Possible parameters" << "\n\n";
-        std::cout<< "\t--exclude :A part you wish to exclude. Set to empty by default." <<std::endl;
+        yarp::os::Log().error() << "Possible parameters \n";
+        yarp::os::Log().error()<< "\t--robot :Robot name. Set to icub by default.";
+        yarp::os::Log().error()<< "\t--exclude :A part you wish to exclude. Set to empty by default.";
         return 0;
     }
 
     QApplication a(argc, argv);
 
-    MainWindow w(rf);
+    MainWindow w;
+    yarp::os::Log().info() << " Trying to connect to pidTunerController ... ";
+    if(!w.init(rf)) return -1;
     w.setWindowTitle("PID Tuner");
     w.show();
-
-
 
     return a.exec();
 }
