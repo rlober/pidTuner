@@ -38,43 +38,55 @@
 #include <cmath>
 #include <iostream>
 
+#include <boost/chrono.hpp>
+#include <boost/thread.hpp>
 
-
-#define POSITION_MODE 0
-#define VELOCITY_MODE 1
-#define TORQUE_MODE 2
+static const int POSITION_MODE = 0;
+static const int VELOCITY_MODE = 1;
+static const int TORQUE_MODE = 2;
 
 
 using namespace yarp::os;
 
-
-MainWindow::MainWindow(yarp::os::ResourceFinder &rf, QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow)
+bool MainWindow::init(ResourceFinder& rf)
 {
-    signalAmplitude_POS_DEFAULT = 0.5;
-    signalStartTime_POS_DEFAULT = 0.5;
-    signalDuration_POS_DEFAULT = 1.5;
+    boost::thread init_th = boost::thread(boost::bind(&MainWindow::initialize, this,rf));
+    if(! init_th.try_join_for(boost::chrono::milliseconds(2000)))
+    {
+        log.error() << " Timeout at init, please check that pidTunerController is launched";
+        return false;
+    }
+    initFinished = false;
 
-    signalAmplitude_VEL_DEFAULT = 0.1;
-    signalStartTime_VEL_DEFAULT = 0.1;
-    signalDuration_VEL_DEFAULT = 0.5;
-
-    signalAmplitude_TOR_DEFAULT = 0.05;
-    signalStartTime_TOR_DEFAULT = 0.1;
-    signalDuration_TOR_DEFAULT = 0.5;
-
-
-    partsListVector.push_back("head");
-    partsListVector.push_back("torso");
-    partsListVector.push_back("left_arm");
-    partsListVector.push_back("right_arm");
-    partsListVector.push_back("left_leg");
-    partsListVector.push_back("right_leg");
+    std::cout << "Setting up Qt Ui" << std::endl;
+    ui->setupUi(this);
+    std::cout << "Ui setup." << std::endl;
 
 
 
 
+    std::cout << "Setting signal properties to default values...";
+    setSignalPropertiesToDefaults();
+
+    std::cout << "initializing GUI...";
+    initializeGui();
+
+    std::cout << "Getting PID Gains...";
+    getPidGains();
+
+    std::cout << "Creating data logs...";
+    createDataLogs();
+
+
+    initFinished = true;
+
+    std::cout << "\n-----------\nGui initialization finished!\n-----------"<< std::endl;
+    return true;
+}
+
+bool MainWindow::initialize(ResourceFinder& rf)
+{
+    log.info()<< " Initializing connections ";
     if( rf.check("exclude") )
     {
         std::string excludedPart = rf.find("exclude").asString().c_str();
@@ -133,31 +145,32 @@ MainWindow::MainWindow(yarp::os::ResourceFinder &rf, QWidget *parent) :
 
 
     std::cout << "\nPorts connected.\n" << std::endl;
-    initFinished = false;
+    return true;
+}
 
-    std::cout << "Setting up Qt Ui" << std::endl;
-    ui->setupUi(this);
-    std::cout << "Ui setup." << std::endl;
+MainWindow::MainWindow(QWidget *parent) :
+    QMainWindow(parent),
+    ui(new Ui::MainWindow)
+{
+    signalAmplitude_POS_DEFAULT = 0.5;
+    signalStartTime_POS_DEFAULT = 0.5;
+    signalDuration_POS_DEFAULT = 1.5;
 
+    signalAmplitude_VEL_DEFAULT = 0.1;
+    signalStartTime_VEL_DEFAULT = 0.1;
+    signalDuration_VEL_DEFAULT = 0.5;
 
-
-
-    std::cout << "Setting signal properties to default values...";
-    setSignalPropertiesToDefaults();
-
-    std::cout << "initializing GUI...";
-    initializeGui();
-
-    std::cout << "Getting PID Gains...";
-    getPidGains();
-
-    std::cout << "Creating data logs...";
-    createDataLogs();
+    signalAmplitude_TOR_DEFAULT = 0.05;
+    signalStartTime_TOR_DEFAULT = 0.1;
+    signalDuration_TOR_DEFAULT = 0.5;
 
 
-    initFinished = true;
-
-    std::cout << "\n-----------\nGui initialization finished!\n-----------"<< std::endl;
+    partsListVector.push_back("head");
+    partsListVector.push_back("torso");
+    partsListVector.push_back("left_arm");
+    partsListVector.push_back("right_arm");
+    partsListVector.push_back("left_leg");
+    partsListVector.push_back("right_leg");
 
 }
 

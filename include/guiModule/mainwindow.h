@@ -69,9 +69,9 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(yarp::os::ResourceFinder &rf, QWidget *parent = 0);
+    explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-
+    bool init(yarp::os::ResourceFinder &rf);
     void initializeGui();
 
 private slots:
@@ -103,12 +103,10 @@ private slots:
 
 private:
     boost::scoped_ptr<Ui::MainWindow> ui;
-
-
-
-
+    yarp::os::Log log;
 
     //Functions
+    bool initialize(yarp::os::ResourceFinder &rf);
     void resetYLabel();
     void setCurrentPartAndJoint();
     bool discardChanges();
