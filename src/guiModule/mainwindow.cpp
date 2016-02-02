@@ -29,7 +29,7 @@
 * along with pidTuner.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "mainwindow.h"
+#include "guiModule/mainwindow.h"
 #include "ui_mainwindow.h"
 
 #include <yarp/sig/Vector.h>

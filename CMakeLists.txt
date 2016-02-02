@@ -6,7 +6,6 @@ set(PROJECTNAME_GUI pidTunerGui)
 project(pidTuner)
 
 
-set(CMAKE_CXX_FLAGS "-fPIC")
 
 # Tell CMake to run moc when necessary:
 set(CMAKE_AUTOMOC ON)
@@ -64,7 +63,6 @@ SOURCE_GROUP("HEADERS" FILES ${controller_header} ${gui_header})
 SOURCE_GROUP("FORMS" FILES ${gui_forms})
 
 include_directories(${PROJECT_SOURCE_DIR}/include
-                    ${PROJECT_SOURCE_DIR}/include/controlModule
                     ${PROJECT_SOURCE_DIR}/include/guiModule
                     ${ICUB_INCLUDE_DIRS}
                     ${YARP_INCLUDE_DIRS}
@@ -73,6 +71,8 @@ include_directories(${PROJECT_SOURCE_DIR}/include
                     ${Qt5PrintSupport_INCLUDE_DIRS}
                     ${TinyXML_INCLUDE_DIRS})
 
+
+                QT5_WRAP_UI(gui_forms_headers ${gui_forms})
 add_executable(${PROJECTNAME_CONTROLLER} ${controller_source} ${controller_header})
 target_link_libraries(${PROJECTNAME_CONTROLLER}
     ${YARP_LIBRARIES}
@@ -82,12 +82,8 @@ target_link_libraries(${PROJECTNAME_CONTROLLER}
     ${Qt5Gui_LIBRARIES}
     ${Qt5PrintSupport_LIBRARIES} )
 
-message("
-    gui_forms
-    ${gui_forms}
-    ")
 
-add_executable(${PROJECTNAME_GUI} ${gui_source} ${gui_header} ${gui_forms})
+add_executable(${PROJECTNAME_GUI} ${gui_source} ${gui_header} ${gui_forms} ${gui_forms_headers})
 target_link_libraries(${PROJECTNAME_GUI}
     ${Qt5Widgets_LIBRARIES}
     ${Qt5Core_LIBRARIES}
