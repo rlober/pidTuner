@@ -32,7 +32,7 @@ endif()
 
 find_package(YARP)
 find_package(ICUB)
-find_package(Boost COMPONENTS system filesystem REQUIRED)
+find_package(Boost 1.50 COMPONENTS system filesystem chrono thread REQUIRED)
 find_package(TinyXML QUIET)
 
 if (NOT TinyXML_FOUND)
