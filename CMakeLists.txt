@@ -13,7 +13,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 # As moc files are generated in the binary dir, tell CMake
 # to always look for includes there:
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 
 if(DEFINED ENV{Qt5_DIR})
   set(CODYCO_QT_CMAKE_PATH $ENV{Qt5_DIR})
@@ -52,11 +52,19 @@ FILE(GLOB controller_header ${CMAKE_CURRENT_SOURCE_DIR}/include/controlModule/*.
 
 FILE(GLOB gui_source ${CMAKE_CURRENT_SOURCE_DIR}/src/guiModule/*.cpp )
 FILE(GLOB gui_header ${CMAKE_CURRENT_SOURCE_DIR}/include/guiModule/*.h)
+FILE(GLOB gui_forms ${CMAKE_CURRENT_SOURCE_DIR}/src/guiModule/*.ui )
 
+# For MSVS
 SOURCE_GROUP("Source Files" FILES ${controller_source} ${gui_source})
 SOURCE_GROUP("Header Files" FILES ${controller_header} ${gui_header})
 
-include_directories(${PROJECT_SOURCE_DIR}/include/controlModule
+# For QtCreator
+SOURCE_GROUP("SOURCES" FILES ${controller_source} ${gui_source})
+SOURCE_GROUP("HEADERS" FILES ${controller_header} ${gui_header})
+SOURCE_GROUP("FORMS" FILES ${gui_forms})
+
+include_directories(${PROJECT_SOURCE_DIR}/include
+                    ${PROJECT_SOURCE_DIR}/include/controlModule
                     ${PROJECT_SOURCE_DIR}/include/guiModule
                     ${ICUB_INCLUDE_DIRS}
                     ${YARP_INCLUDE_DIRS}
@@ -74,7 +82,12 @@ target_link_libraries(${PROJECTNAME_CONTROLLER}
     ${Qt5Gui_LIBRARIES}
     ${Qt5PrintSupport_LIBRARIES} )
 
-add_executable(${PROJECTNAME_GUI} ${gui_source} ${gui_header})
+message("
+    gui_forms
+    ${gui_forms}
+    ")
+
+add_executable(${PROJECTNAME_GUI} ${gui_source} ${gui_header} ${gui_forms})
 target_link_libraries(${PROJECTNAME_GUI}
     ${Qt5Widgets_LIBRARIES}
     ${Qt5Core_LIBRARIES}
