@@ -100,13 +100,7 @@ private slots:
     void on_stiction_down_in_editingFinished();
     void on_bemf_in_editingFinished();
     void on_coulombVelThresh_in_editingFinished();
-    void on_frictionCompensation_in_editingFinished();    
-
-
-
-
-
-
+    void on_frictionCompensation_in_editingFinished();
 
     void on_saveGainsButton_clicked();
     void on_gainResetButton_clicked();

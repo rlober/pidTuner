@@ -24,7 +24,15 @@ bool CtrlModule::configure(ResourceFinder &rf)
         std::cout << "\n\nExcluding: " << excludedPart << "\n" << std::endl;
     }
 
-    thr.reset(new CtrlThread(CTRL_THREAD_PER, robotName, excludedPart));
+    bool isUsingJtc = false;
+    if( rf.check("jtc") )
+    {
+        isUsingJtc = true;
+        std::cout << "\n\nUsing Joint Torque Control\n" << std::endl;
+    }
+
+    int period = 10; //ms
+    thr.reset(new CtrlThread(period, robotName, excludedPart, isUsingJtc));
     if (!thr->start())
     {
         return false;

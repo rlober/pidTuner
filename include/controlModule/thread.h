@@ -117,7 +117,7 @@ class CtrlThread: public RateThread
 
 
     public:
-        CtrlThread(const double period, const std::string Robot_Name, const std::string Excluded_Part);
+        CtrlThread(const int period, const std::string Robot_Name, const std::string Excluded_Part, bool isUsingJtc=false);
 
         virtual bool threadInit();
 
@@ -156,7 +156,22 @@ class CtrlThread: public RateThread
 
     private:
         yarp::os::Log log;
-        double Kp_thread, Kd_thread, Ki_thread;
+
+        bool usingJTC;
+        double  Kp_thread,
+                Kd_thread,
+                Ki_thread,
+                Kff_thread,
+                max_int_thread,
+                scale_thread,
+                max_output_thread,
+                offset_thread,
+                stiction_up_thread,
+                stiction_down_thread,
+                bemf_thread,
+                coulombVelThresh_thread,
+                frictionCompensation_thread;
+
         void sendPidGains();
         void parseIncomingGains(Bottle *newGainMessage);
         void parseIncomingControlMode(Bottle *newControlModeMessage);

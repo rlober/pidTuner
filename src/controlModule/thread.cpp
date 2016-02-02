@@ -51,16 +51,21 @@ using namespace boost;
 using namespace boost::filesystem;
 using namespace std;
 
-CtrlThread::CtrlThread(const double period, const std::string Robot_Name, const std::string Excluded_Part) :
-    RateThread(int(period*1000.0)),
+CtrlThread::CtrlThread(const int period, const std::string Robot_Name, const std::string Excluded_Part, bool isUsingJtc) :
+    RateThread(period),
     robotName(Robot_Name),
-    excludedPart(Excluded_Part)
+    excludedPart(Excluded_Part),
+    usingJTC(isUsingJtc)
 {
     if (robotName.size()==0) {
         log.info() << " [WARNING] Robot name was not initialized. Defaulting to robotName=icubGazeboSim.";
         log.info() << " To set the robot name simply use: --robot [name of robot] when launching the pidTunerController. Remember, no brackets around the name of the robot.";
 
         robotName="icub";
+    }
+    if(usingJTC)
+    {
+        robotName += "/jtc";
     }
     baseFilePath = boost::filesystem::current_path().string();
     boost::filesystem::path full_path( baseFilePath );
@@ -85,7 +90,6 @@ bool CtrlThread::threadInit()
     isPositionMode  = true;
     isVelocityMode  = false;
     isTorqueMode    = false;
-
     Kp_thread = Kd_thread = Ki_thread = 0.0;
 
     partIndex = 0;
@@ -475,7 +479,15 @@ void CtrlThread::parseIncomingGains(Bottle *newGainMessage)
         newPid.setKp(newGainMessage->get(1).asDouble());
         newPid.setKd(newGainMessage->get(2).asDouble());
         newPid.setKi(newGainMessage->get(3).asDouble());
-
+        newPid.setKff(newGainMessage->get(4).asDouble());
+        newPid.setMaxInt(newGainMessage->get(5).asDouble());
+        newPid.setScale(newGainMessage->get(6).asDouble());
+        newPid.setMaxOut(newGainMessage->get(7).asDouble());
+        newPid.setOffset(newGainMessage->get(8).asDouble());
+        newPid.setStictionValues(newGainMessage->get(9).asDouble(), newGainMessage->get(10).asDouble());
+        if(usingJTC){
+            //get bemf, coulombVelThresh and frictionComp.
+        }
         //send new Pid to device
 
         if (iPids[partIndex]==NULL) {
@@ -664,6 +676,18 @@ void CtrlThread::updatePidInformation()
         Kp_thread = currentPid.kp;
         Kd_thread = currentPid.kd;
         Ki_thread = currentPid.ki;
+        Kff_thread = currentPid.kff;
+        max_int_thread = currentPid.max_int;
+        scale_thread = currentPid.scale;
+        max_output_thread = currentPid.max_output;
+        offset_thread = currentPid.offset;
+        stiction_up_thread = currentPid.stiction_up_val;
+        stiction_down_thread = currentPid.stiction_down_val;
+        if(usingJTC){
+            // bemf_thread = currentPid.bemf;
+            // coulombVelThresh_thread = currentPid.coulombVelThresh;
+            // frictionCompensation_thread = currentPid.frictionCompensation;
+        }
     }
     else{log.error() << " Couldn't retrieve PID from part "<<partIndex << ", joint " << jointIndex;}
 
@@ -679,6 +703,19 @@ void CtrlThread::sendPidGains()
     gainsBottle_out.addDouble(Kp_thread);
     gainsBottle_out.addDouble(Kd_thread);
     gainsBottle_out.addDouble(Ki_thread);
+    gainsBottle_out.addDouble(Kff_thread);
+    gainsBottle_out.addDouble(max_int_thread);
+    gainsBottle_out.addDouble(scale_thread);
+    gainsBottle_out.addDouble(max_output_thread);
+    gainsBottle_out.addDouble(offset_thread);
+    gainsBottle_out.addDouble(stiction_up_thread);
+    gainsBottle_out.addDouble(stiction_down_thread);
+    if(usingJTC){
+
+        gainsBottle_out.addDouble(bemf_thread);
+        gainsBottle_out.addDouble(coulombVelThresh_thread);
+        gainsBottle_out.addDouble(frictionCompensation_thread);
+    }
     gainsPort_out.write(gainsBottle_out);
 }
 

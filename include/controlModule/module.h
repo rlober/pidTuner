@@ -2,8 +2,6 @@
 #include "thread.h"
 #include <boost/scoped_ptr.hpp>
 
-#define CTRL_THREAD_PER         0.02    // [s]
-
 using namespace yarp::os;
 using namespace yarp::dev;
 

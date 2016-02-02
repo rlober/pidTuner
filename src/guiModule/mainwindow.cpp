@@ -183,6 +183,7 @@ void MainWindow::setCurrentPartAndJoint()
 {
     ui->partList->setCurrentIndex(partIndex);
     ui->jointList->setCurrentIndex(jointIndex);
+    getPidGains();
 }
 
 void MainWindow::initializeGui()
@@ -561,6 +562,7 @@ void MainWindow::on_posContButton_clicked(bool checked)
             signalDuration = signalDuration_POS;
             updateSignalPropertiesInGui();
             sendExcitationSignalProperties();
+            getPidGains();
         }
     }
     else{
@@ -585,6 +587,7 @@ void MainWindow::on_velContButton_clicked(bool checked)
             signalDuration = signalDuration_VEL;
             updateSignalPropertiesInGui();
             sendExcitationSignalProperties();
+            getPidGains();
         }
     }
     else{
@@ -608,6 +611,7 @@ void MainWindow::on_torContButton_clicked(bool checked)
             signalDuration = signalDuration_TOR;
             updateSignalPropertiesInGui();
             sendExcitationSignalProperties();
+            getPidGains();
         }
     }
     else{
@@ -660,50 +664,46 @@ void MainWindow::on_max_int_in_editingFinished()
 {
     max_int_new = getValueFromUserInput(ui->max_int_in);
 }
+
 void MainWindow::on_scale_in_editingFinished()
 {
     scale_new = getValueFromUserInput(ui->scale_in);
 }
+
 void MainWindow::on_max_output_in_editingFinished()
 {
     max_output_new = getValueFromUserInput(ui->max_output_in);
 }
+
 void MainWindow::on_offset_in_editingFinished()
 {
     offset_new = getValueFromUserInput(ui->offset_in);
 }
+
 void MainWindow::on_stiction_up_in_editingFinished()
 {
     stiction_up_new = getValueFromUserInput(ui->stiction_up_in);
 }
+
 void MainWindow::on_stiction_down_in_editingFinished()
 {
     stiction_down_new = getValueFromUserInput(ui->stiction_down_in);
 }
+
 void MainWindow::on_bemf_in_editingFinished()
 {
     bemf_new = getValueFromUserInput(ui->bemf_in);
 }
+
 void MainWindow::on_coulombVelThresh_in_editingFinished()
 {
     coulombVelThresh_new = getValueFromUserInput(ui->coulombVelThresh_in);
 }
+
 void MainWindow::on_frictionCompensation_in_editingFinished()
 {
     frictionCompensation_new = getValueFromUserInput(ui->frictionCompensation_in);
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 void MainWindow::on_saveGainsButton_clicked()
 {
@@ -737,6 +737,19 @@ void MainWindow::refreshGainDisplays()
     ui->kp_in->setText(QString::number(Kp_new));
     ui->kd_in->setText(QString::number(Kd_new));
     ui->ki_in->setText(QString::number(Ki_new));
+    ui->kff_in->setText(QString::number(Kff_new));
+    ui->max_int_in->setText(QString::number(max_int_new));
+    ui->scale_in->setText(QString::number(scale_new));
+    ui->max_output_in->setText(QString::number(max_output_new));
+    ui->offset_in->setText(QString::number(offset_new));
+    ui->stiction_up_in->setText(QString::number(stiction_up_new));
+    ui->stiction_down_in->setText(QString::number(stiction_down_new));
+    if(usingJTC)
+    {
+        ui->bemf_in->setText(QString::number(bemf_new));
+        ui->coulombVelThresh_in->setText(QString::number(coulombVelThresh_new));
+        ui->frictionCompensation_in->setText(QString::number(frictionCompensation_new));
+    }
 }
 
 
@@ -792,11 +805,35 @@ bool MainWindow::getPidGains()
     {
         Time::delay(0.001);
     }
-    std::cout<< "Kp = " << controllerResponse.get(0).asDouble() << " Kd = " << controllerResponse.get(1).asDouble() << " Ki = " << controllerResponse.get(2).asDouble() << std::endl;
-    Kp_new = controllerResponse.get(0).asDouble();
-    Kd_new = controllerResponse.get(1).asDouble();
-    Ki_new = controllerResponse.get(2).asDouble();
+    Kp_old                      = controllerResponse.get(0).asDouble();
+    Kd_old                      = controllerResponse.get(1).asDouble();
+    Ki_old                      = controllerResponse.get(2).asDouble();
+    Kff_old                     = controllerResponse.get(3).asDouble();
+    max_int_old                 = controllerResponse.get(4).asDouble();
+    scale_old                   = controllerResponse.get(5).asDouble();
+    max_output_old              = controllerResponse.get(6).asDouble();
+    offset_old                  = controllerResponse.get(7).asDouble();
+    stiction_up_old             = controllerResponse.get(8).asDouble();
+    stiction_down_old           = controllerResponse.get(9).asDouble();
+    Kp_new = Kp_old;
+    Kd_new = Kd_old;
+    Ki_new = Ki_old;
+    Kff_new = Kff_old;
+    max_int_new = max_int_old;
+    scale_new = scale_old;
+    max_output_new = max_output_old;
+    offset_new = offset_old;
+    stiction_up_new = stiction_up_old;
+    stiction_down_new = stiction_down_old;
 
+    if(usingJTC){
+        bemf_old                    = controllerResponse.get(10).asDouble();
+        coulombVelThresh_old        = controllerResponse.get(11).asDouble();
+        frictionCompensation_old    = controllerResponse.get(12).asDouble();
+        bemf_new = bemf_old;
+        coulombVelThresh_new = coulombVelThresh_old;
+        frictionCompensation_new = frictionCompensation_old;
+    }
     refreshGainDisplays();
     return true;
 }
@@ -811,6 +848,7 @@ bool MainWindow::setPidGains()
     gainsBottle_out.addDouble(Kp_new);
     gainsBottle_out.addDouble(Kd_new);
     gainsBottle_out.addDouble(Ki_new);
+    gainsBottle_out.addDouble(Kff_new);
     gainsBottle_out.addDouble(max_int_new);
     gainsBottle_out.addDouble(scale_new);
     gainsBottle_out.addDouble(max_output_new);
@@ -829,10 +867,22 @@ bool MainWindow::setPidGains()
     {
         Time::delay(0.001);
     }
-    std::cout<< "Kp = " << controllerResponse.get(0).asDouble() << " Kd = " << controllerResponse.get(1).asDouble() << " Ki = " << controllerResponse.get(2).asDouble() << std::endl;
     Kp_new = controllerResponse.get(0).asDouble();
     Kd_new = controllerResponse.get(1).asDouble();
     Ki_new = controllerResponse.get(2).asDouble();
+    Kff_new = controllerResponse.get(3).asDouble();
+    max_int_new = controllerResponse.get(4).asDouble();
+    scale_new = controllerResponse.get(5).asDouble();
+    max_output_new = controllerResponse.get(6).asDouble();
+    offset_new = controllerResponse.get(7).asDouble();
+    stiction_up_new = controllerResponse.get(8).asDouble();
+    stiction_down_new = controllerResponse.get(9).asDouble();
+    if(usingJTC){
+        bemf_new = controllerResponse.get(10).asDouble();
+        coulombVelThresh_new = controllerResponse.get(11).asDouble();
+        frictionCompensation_new = controllerResponse.get(12).asDouble();
+    }
+
 
     refreshGainDisplays();
     return true;
