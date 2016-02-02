@@ -35,6 +35,7 @@
 
 #include <QMainWindow>
 #include <QMessageBox>
+#include <QLineEdit>
 
 #include <yarp/os/Network.h>
 #include <yarp/os/BufferedPort.h>
@@ -90,6 +91,23 @@ private slots:
     void on_kd_in_editingFinished();
     void on_kp_in_editingFinished();
     void on_ki_in_editingFinished();
+    void on_kff_in_editingFinished();
+    void on_max_int_in_editingFinished();
+    void on_scale_in_editingFinished();
+    void on_max_output_in_editingFinished();
+    void on_offset_in_editingFinished();
+    void on_stiction_up_in_editingFinished();
+    void on_stiction_down_in_editingFinished();
+    void on_bemf_in_editingFinished();
+    void on_coulombVelThresh_in_editingFinished();
+    void on_frictionCompensation_in_editingFinished();    
+
+
+
+
+
+
+
     void on_saveGainsButton_clicked();
     void on_gainResetButton_clicked();
     // void on_partList_highlighted(int index);
@@ -122,6 +140,8 @@ private:
     void sendExcitationSignalProperties();
     void updateSignalPropertiesInGui();
     void setSignalPropertiesToDefaults();
+    double getValueFromUserInput(QLineEdit* userInputBox);
+
 
     //Variables
     QString yPlotLabel;
@@ -135,13 +155,57 @@ private:
     bool doExcludePart;
     int excludedPartIndex;
 
+    bool usingJTC;
+    double  Kp_new,
+            Kd_new,
+            Ki_new,
+            Kff_new,
+            max_int_new,
+            scale_new,
+            max_output_new,
+            offset_new,
+            stiction_up_new,
+            stiction_down_new,
+            bemf_new,
+            coulombVelThresh_new,
+            frictionCompensation_new;
 
-    double Kp_new, Kd_new, Ki_new;
-    double Kp_old, Kd_old, Ki_old;
+    double  Kp_old,
+            Kd_old,
+            Ki_old,
+            Kff_old,
+            max_int_old,
+            scale_old,
+            max_output_old,
+            offset_old,
+            stiction_up_old,
+            stiction_down_old,
+            bemf_old,
+            coulombVelThresh_old,
+            frictionCompensation_old;
 
-    double signalAmplitude, signalAmplitude_POS, signalAmplitude_VEL, signalAmplitude_TOR, signalAmplitude_POS_DEFAULT, signalAmplitude_VEL_DEFAULT, signalAmplitude_TOR_DEFAULT;
-    double signalStartTime, signalStartTime_POS, signalStartTime_VEL, signalStartTime_TOR, signalStartTime_POS_DEFAULT, signalStartTime_VEL_DEFAULT, signalStartTime_TOR_DEFAULT;
-    double signalDuration,  signalDuration_POS,  signalDuration_VEL,  signalDuration_TOR,  signalDuration_POS_DEFAULT,  signalDuration_VEL_DEFAULT,  signalDuration_TOR_DEFAULT;
+    double  signalAmplitude,
+            signalAmplitude_POS,
+            signalAmplitude_VEL,
+            signalAmplitude_TOR,
+            signalAmplitude_POS_DEFAULT,
+            signalAmplitude_VEL_DEFAULT,
+            signalAmplitude_TOR_DEFAULT;
+    double  signalStartTime,
+            signalStartTime_POS,
+            signalStartTime_VEL,
+            signalStartTime_TOR,
+            signalStartTime_POS_DEFAULT,
+            signalStartTime_VEL_DEFAULT,
+            signalStartTime_TOR_DEFAULT;
+
+    double  signalDuration,
+            signalDuration_POS,
+            signalDuration_VEL,
+            signalDuration_TOR,
+            signalDuration_POS_DEFAULT,
+            signalDuration_VEL_DEFAULT,
+            signalDuration_TOR_DEFAULT;
 
     yarp::os::Network yarp;
 

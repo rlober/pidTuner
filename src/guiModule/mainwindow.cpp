@@ -106,7 +106,7 @@ bool MainWindow::initialize(ResourceFinder& rf)
     controlMode = POSITION_MODE;
 
 
-
+    usingJTC = false;
     isOnlyMajorJoints = true;
     gainsHaveBeenChanged = false;
     Kp_old=Kd_old=Ki_old=1.0;
@@ -297,7 +297,7 @@ void MainWindow::on_gainTestButton_clicked()
                 break;
 
         }
-        
+
         //Time::delay(0.5);
     }
     size_t vecLength = y_Time.size();
@@ -615,65 +615,95 @@ void MainWindow::on_torContButton_clicked(bool checked)
     }
 }
 
-
-void MainWindow::on_kp_in_editingFinished()
+double MainWindow::getValueFromUserInput(QLineEdit* userInputBox)
 {
     bool ok;
-    Kp_new = ui->kp_in->text().toDouble(&ok);
+    double dVal = userInputBox->text().toDouble(&ok);
     if(!ok){
-        ui->kp_in->setStyleSheet("QLineEdit { background: rgb(255, 0, 0)}");
+        userInputBox->setStyleSheet("QLineEdit { background: rgb(255, 0, 0)}");
         int ret = QMessageBox::warning(this, tr("Warning"),
                                        tr("The gains must be a number. Try again dummy."),
                                        QMessageBox::Ok);
-        if(!ui->kp_in->hasFocus())
-            ui->kp_in->setFocus();
+        if(!userInputBox->hasFocus())
+            userInputBox->setFocus();
 
-        ui->kp_in->selectAll();
+        userInputBox->selectAll();
 
     }
     else
-        ui->kp_in->setStyleSheet("QLineEdit { background: rgb(255, 255, 255)}");
+        userInputBox->setStyleSheet("QLineEdit { background: rgb(255, 255, 255)}");
 
+    return dVal;
+}
 
+void MainWindow::on_kp_in_editingFinished()
+{
+    Kp_new = getValueFromUserInput(ui->kp_in);
 }
 
 void MainWindow::on_kd_in_editingFinished()
 {
-    bool ok;
-    Kd_new = ui->kd_in->text().toDouble(&ok);
-    if(!ok){
-        ui->kd_in->setStyleSheet("QLineEdit { background: rgb(255, 0, 0)}");
-        int ret = QMessageBox::warning(this, tr("Warning"),
-                                       tr("The gains must be a number. Try again dummy."),
-                                       QMessageBox::Ok);
-        if(!ui->kd_in->hasFocus())
-            ui->kd_in->setFocus();
-
-        ui->kd_in->selectAll();
-
-    }
-    else
-        ui->kd_in->setStyleSheet("QLineEdit { background: rgb(255, 255, 255)}");
+    Kd_new = getValueFromUserInput(ui->kd_in);
 }
 
 void MainWindow::on_ki_in_editingFinished()
 {
-    bool ok;
-    Ki_new = ui->ki_in->text().toDouble(&ok);
-    if(!ok){
-        ui->ki_in->setStyleSheet("QLineEdit { background: rgb(255, 0, 0)}");
-        int ret = QMessageBox::warning(this, tr("Warning"),
-                                       tr("The gains must be a number. Try again dummy."),
-                                       QMessageBox::Ok);
-        if(!ui->ki_in->hasFocus())
-            ui->ki_in->setFocus();
-
-        ui->ki_in->selectAll();
-
-    }
-    else
-        ui->ki_in->setStyleSheet("QLineEdit { background: rgb(255, 255, 255)}");
+    Ki_new = getValueFromUserInput(ui->ki_in);
 }
+
+void MainWindow::on_kff_in_editingFinished()
+{
+    Kff_new = getValueFromUserInput(ui->kff_in);
+}
+
+void MainWindow::on_max_int_in_editingFinished()
+{
+    max_int_new = getValueFromUserInput(ui->max_int_in);
+}
+void MainWindow::on_scale_in_editingFinished()
+{
+    scale_new = getValueFromUserInput(ui->scale_in);
+}
+void MainWindow::on_max_output_in_editingFinished()
+{
+    max_output_new = getValueFromUserInput(ui->max_output_in);
+}
+void MainWindow::on_offset_in_editingFinished()
+{
+    offset_new = getValueFromUserInput(ui->offset_in);
+}
+void MainWindow::on_stiction_up_in_editingFinished()
+{
+    stiction_up_new = getValueFromUserInput(ui->stiction_up_in);
+}
+void MainWindow::on_stiction_down_in_editingFinished()
+{
+    stiction_down_new = getValueFromUserInput(ui->stiction_down_in);
+}
+void MainWindow::on_bemf_in_editingFinished()
+{
+    bemf_new = getValueFromUserInput(ui->bemf_in);
+}
+void MainWindow::on_coulombVelThresh_in_editingFinished()
+{
+    coulombVelThresh_new = getValueFromUserInput(ui->coulombVelThresh_in);
+}
+void MainWindow::on_frictionCompensation_in_editingFinished()
+{
+    frictionCompensation_new = getValueFromUserInput(ui->frictionCompensation_in);
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 void MainWindow::on_saveGainsButton_clicked()
 {
@@ -683,7 +713,21 @@ void MainWindow::on_saveGainsButton_clicked()
 
 void MainWindow::on_gainResetButton_clicked()
 {
-    Kp_new = Kp_old; Kd_new = Kd_old; Ki_new = Ki_old;
+    Kp_new = Kp_old;
+    Kd_new = Kd_old;
+    Ki_new = Ki_old;
+    Kff_new = Kff_old;
+    max_int_new = max_int_old;
+    scale_new = scale_old;
+    max_output_new = max_output_old;
+    offset_new = offset_old;
+    stiction_up_new = stiction_up_old;
+    stiction_down_new = stiction_down_old;
+    if(usingJTC){
+        bemf_new = bemf_old;
+        coulombVelThresh_new = coulombVelThresh_old;
+        frictionCompensation_new = frictionCompensation_old;
+    }
     setPidGains();
 
 }
@@ -767,6 +811,17 @@ bool MainWindow::setPidGains()
     gainsBottle_out.addDouble(Kp_new);
     gainsBottle_out.addDouble(Kd_new);
     gainsBottle_out.addDouble(Ki_new);
+    gainsBottle_out.addDouble(max_int_new);
+    gainsBottle_out.addDouble(scale_new);
+    gainsBottle_out.addDouble(max_output_new);
+    gainsBottle_out.addDouble(offset_new);
+    gainsBottle_out.addDouble(stiction_up_new);
+    gainsBottle_out.addDouble(stiction_down_new);
+    if(usingJTC){
+        gainsBottle_out.addDouble(bemf_new);
+        gainsBottle_out.addDouble(coulombVelThresh_new);
+        gainsBottle_out.addDouble(frictionCompensation_new);
+    }
     gainsBufPort_out.write();
 
     Bottle controllerResponse;

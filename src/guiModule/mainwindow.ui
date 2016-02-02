@@ -458,7 +458,7 @@
                <item>
                 <layout class="QVBoxLayout" name="max_intLayout">
                  <item>
-                  <widget class="QLabel" name="kp_label_2">
+                  <widget class="QLabel" name="max_int_label">
                    <property name="text">
                     <string>max_int</string>
                    </property>
@@ -468,7 +468,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="max_int_label"/>
+                  <widget class="QLineEdit" name="max_int_in"/>
                  </item>
                 </layout>
                </item>
@@ -560,9 +560,9 @@
                 </widget>
                </item>
                <item>
-                <layout class="QVBoxLayout" name="stickUpLayout">
+                <layout class="QVBoxLayout" name="stictionUpLayout">
                  <item>
-                  <widget class="QLabel" name="stick_up_label">
+                  <widget class="QLabel" name="stiction_up_label">
                    <property name="text">
                     <string>Stiction Up</string>
                    </property>
@@ -572,14 +572,14 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="stick_up_in"/>
+                  <widget class="QLineEdit" name="stiction_up_in"/>
                  </item>
                 </layout>
                </item>
                <item>
-                <layout class="QVBoxLayout" name="stickDownLayout">
+                <layout class="QVBoxLayout" name="stictionDownLayout">
                  <item>
-                  <widget class="QLabel" name="stick_down_label">
+                  <widget class="QLabel" name="stiction_down_label">
                    <property name="text">
                     <string>Stiction Down</string>
                    </property>
@@ -589,7 +589,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="stick_down_in"/>
+                  <widget class="QLineEdit" name="stiction_down_in"/>
                  </item>
                 </layout>
                </item>
@@ -649,9 +649,6 @@
                    <property name="orientation">
                     <enum>Qt::Vertical</enum>
                    </property>
-                   <property name="sizeType">
-                    <enum>QSizePolicy::Maximum</enum>
-                   </property>
                    <property name="sizeHint" stdset="0">
                     <size>
                      <width>20</width>
@@ -665,7 +662,7 @@
                <item>
                 <layout class="QVBoxLayout" name="coulombVelThrLayout">
                  <item>
-                  <widget class="QLabel" name="coulombVelThr_label">
+                  <widget class="QLabel" name="coulombVelThresh_label">
                    <property name="text">
                     <string>Coulomb Vel. Threshold</string>
                    </property>
@@ -675,15 +672,12 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="coulombVelThr_in"/>
+                  <widget class="QLineEdit" name="coulombVelThresh_in"/>
                  </item>
                  <item>
                   <spacer name="verticalSpacer_4">
                    <property name="orientation">
                     <enum>Qt::Vertical</enum>
-                   </property>
-                   <property name="sizeType">
-                    <enum>QSizePolicy::Maximum</enum>
                    </property>
                    <property name="sizeHint" stdset="0">
                     <size>
@@ -696,9 +690,9 @@
                 </layout>
                </item>
                <item>
-                <layout class="QVBoxLayout" name="fricCompLayout">
+                <layout class="QVBoxLayout" name="frictionCompensationLayout">
                  <item>
-                  <widget class="QLabel" name="fricComp_label">
+                  <widget class="QLabel" name="frictionCompensation_label">
                    <property name="text">
                     <string>Friction Compensation</string>
                    </property>
@@ -708,10 +702,10 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="fricComp_in"/>
+                  <widget class="QLineEdit" name="frictionCompensation_in"/>
                  </item>
                  <item>
-                  <widget class="QSlider" name="fricComp_slider">
+                  <widget class="QSlider" name="frictionCompensation_slider">
                    <property name="minimumSize">
                     <size>
                      <width>0</width>
