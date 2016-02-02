@@ -277,41 +277,36 @@ void MainWindow::on_gainTestButton_clicked()
     Bottle dataFromController;
     yarp::sig::Vector y_Time, y_Input, y_Response;
 
-    int bufferLength = 1000;
+    /*int bufferLength = 1000;
     y_Time.resize(bufferLength);
     y_Input.resize(bufferLength);
-    y_Response.resize(bufferLength);
+    y_Response.resize(bufferLength);*/
 
 
-    int vecLength=0;
-    bool waitingForData = true;
-    while(waitingForData)
+    while(1)
     {
+        std::cout << " Getting data "<<y_Time.size()<<std::endl;;
         if(dataPort_in.read(dataFromController))
         {
             if(dataFromController.get(0).asInt())
             {
-                y_Time[vecLength] = dataFromController.get(1).asDouble();
-                y_Input[vecLength] = dataFromController.get(2).asDouble();
-                y_Response[vecLength] = dataFromController.get(3).asDouble();
-                vecLength++;
-            }
-
-            else if(!dataFromController.get(0).asInt())
-            {
-                waitingForData = false;
-            }
+                y_Time.push_back(dataFromController.get(1).asDouble());
+                y_Input.push_back(dataFromController.get(2).asDouble());
+                y_Response.push_back(dataFromController.get(3).asDouble());
+            }else
+                break;
 
         }
-        Time::delay(0.001);
+        
+        //Time::delay(0.5);
     }
-
+    size_t vecLength = y_Time.size();
     // std::cout << "\n\n--------\nData received. Parsing "<< dataFromController.size()<<" items..." << std::endl;
     // int vecLength = dataFromController.get(0).asInt();
 
-    y_Time.resize(vecLength);
+    /*y_Time.resize(vecLength);
     y_Input.resize(vecLength);
-    y_Response.resize(vecLength);
+    y_Response.resize(vecLength);*/
 
 
 

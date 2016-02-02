@@ -849,7 +849,7 @@ void CtrlThread::sendDataToGui()
         // dataBottle_out.addList().read(data_input);
         // dataBottle_out.addList().read(data_response);
 
-
+        log.info() << " writing data "<<i;
         dataPort_out.write(dataBottle_out);
     }
     Bottle dataBottle_out;
