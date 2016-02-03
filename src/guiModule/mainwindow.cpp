@@ -30,7 +30,7 @@
 */
 
 #include "guiModule/mainwindow.h"
-
+#include "ui_mainwindow.h"
 //
 // static const int POSITION_MODE = 0;
 // static const int VELOCITY_MODE = 1;

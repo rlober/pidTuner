@@ -36,7 +36,7 @@
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QLineEdit>
-#include "ui_mainwindow.h"
+//#include "ui_mainwindow.h"
 // #include <yarp/os/Network.h>
 // #include <yarp/os/BufferedPort.h>
 // #include <yarp/os/Port.h>

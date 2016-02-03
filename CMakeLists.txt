@@ -72,7 +72,7 @@ include_directories(${PROJECT_SOURCE_DIR}/include
                     ${TinyXML_INCLUDE_DIRS})
 
 
-                QT5_WRAP_UI(gui_forms_headers ${gui_forms})
+QT5_WRAP_UI(gui_forms_headers ${gui_forms})
 add_executable(${PROJECTNAME_CONTROLLER} ${controller_source} ${controller_header})
 target_link_libraries(${PROJECTNAME_CONTROLLER}
     ${YARP_LIBRARIES}
