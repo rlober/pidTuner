@@ -115,6 +115,7 @@ bool CtrlThread::threadInit()
     // robotDevice.resize(numRobotParts);
     iEnc.resize(numRobotParts);
     iPos.resize(numRobotParts);
+    iPosDirect.resize(numRobotParts);
     iVel.resize(numRobotParts);
     iTrq.resize(numRobotParts);
     iLims.resize(numRobotParts);
@@ -300,6 +301,8 @@ bool CtrlThread::openInterfaces()
         log.info() << " \nViewing Devices:";
         ok = robotDevice[rp]->view(iPos[rp]);
         log.info() << " iPos created";
+        ok = robotDevice[rp]->view(iPosDirect[rp]);
+        log.info() << " iPosDirect created";
         ok = ok && robotDevice[rp]->view(iEnc[rp]);
         log.info() << " iEnc created";
         ok = ok && robotDevice[rp]->view(iVel[rp]);
@@ -324,6 +327,7 @@ bool CtrlThread::openInterfaces()
 
         nJoints[rp]=0;
         iPos[rp]->getAxes(&nJoints[rp]);
+        iPosDirect[rp]->getAxes(&nJoints[rp]);
 
 
         encoders[rp].resize(nJoints[rp]);
@@ -414,8 +418,8 @@ bool CtrlThread::sendJointCommand(double cmd)
 
     if (isPositionMode)
     {
-        // iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_POSITION);
-        iPos[partIndex]->positionMove(jointIndex, cmd);
+        // iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_POSITION_DIRECT);
+        iPosDirect[partIndex]->setPosition(jointIndex, cmd);
     }
 
     else if (isVelocityMode)
@@ -535,7 +539,6 @@ void CtrlThread::parseIncomingGains(Bottle *newGainMessage)
         if (isPositionMode)
         {
             iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_POSITION_DIRECT);
-            iPos[partIndex]->setRefSpeed(jointIndex, 10.0);
         }
         else if (isVelocityMode)
         {
