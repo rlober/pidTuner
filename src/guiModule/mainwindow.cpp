@@ -30,23 +30,51 @@
 */
 
 #include "guiModule/mainwindow.h"
-#include "ui_mainwindow.h"
 
-#include <yarp/sig/Vector.h>
-#include <yarp/math/Math.h>
-
-#include <cmath>
-#include <iostream>
-
-#include <boost/chrono.hpp>
-#include <boost/thread.hpp>
-
-static const int POSITION_MODE = 0;
-static const int VELOCITY_MODE = 1;
-static const int TORQUE_MODE = 2;
+//
+// static const int POSITION_MODE = 0;
+// static const int VELOCITY_MODE = 1;
+// static const int TORQUE_MODE = 2;
 
 
 using namespace yarp::os;
+
+
+MainWindow::MainWindow(QWidget *parent) :
+    QMainWindow(parent),
+    ui(new Ui::MainWindow),
+    testControlMode(POSITION_MODE),
+    usingJTC(false),
+    isOnlyMajorJoints(true),
+    gainsHaveBeenChanged(false)
+{
+    signalAmplitude_POS_DEFAULT = 0.5;
+    signalStartTime_POS_DEFAULT = 0.5;
+    signalDuration_POS_DEFAULT = 1.5;
+
+    signalAmplitude_VEL_DEFAULT = 0.1;
+    signalStartTime_VEL_DEFAULT = 0.1;
+    signalDuration_VEL_DEFAULT = 0.5;
+
+    signalAmplitude_TOR_DEFAULT = 0.05;
+    signalStartTime_TOR_DEFAULT = 0.1;
+    signalDuration_TOR_DEFAULT = 0.5;
+
+
+    partsListVector.push_back("head");
+    partsListVector.push_back("torso");
+    partsListVector.push_back("left_arm");
+    partsListVector.push_back("right_arm");
+    partsListVector.push_back("left_leg");
+    partsListVector.push_back("right_leg");
+
+}
+
+MainWindow::~MainWindow()
+{
+    //delete ui;
+}
+
 
 bool MainWindow::init(ResourceFinder& rf)
 {
@@ -72,7 +100,7 @@ bool MainWindow::init(ResourceFinder& rf)
     initializeGui();
 
     std::cout << "Getting PID Gains...";
-    getPidGains();
+    getPidValues();
 
     std::cout << "Creating data logs...";
     createDataLogs();
@@ -103,87 +131,53 @@ bool MainWindow::initialize(ResourceFinder& rf)
 
 
 
-    controlMode = POSITION_MODE;
 
-
-    usingJTC = false;
-    isOnlyMajorJoints = true;
-    gainsHaveBeenChanged = false;
-    Kp_old=Kd_old=Ki_old=1.0;
-    Kp_new=Kd_new=Ki_new=2.0;
 
     ///////////////////////////////////
-    gainsBufPort_out.open("/pidTunerGui/gains/out");
-    gainsPort_in.open("/pidTunerGui/gains/in");
+    // gainsBufPort_out.open("/pidTunerGui/gains/out");
+    // gainsPort_in.open("/pidTunerGui/gains/in");
+    //
+    // goToHomeBufPort_out.open("/pidTunerGui/goToHome/out");
+    //
+    // robotPartAndJointBufPort_out.open("/pidTunerGui/partAndJointIndexes/out");
+    //
+    // controlModeBufPort_out.open("/pidTunerGui/controlMode/out");
 
-    goToHomeBufPort_out.open("/pidTunerGui/goToHome/out");
+    dataPort_in.open("/pidTunerGui/data:i");
+    rpcClientPort.open("/pidTunerGui/rpc:c");
 
-    robotPartAndJointBufPort_out.open("/pidTunerGui/partAndJointIndexes/out");
-
-    controlModeBufPort_out.open("/pidTunerGui/controlMode/out");
-
-    dataPort_in.open("/pidTunerGui/data/in");
-
-    signalPropertiesBufPort_out.open("/pidTunerGui/signalProperties/out");
+    // signalPropertiesBufPort_out.open("/pidTunerGui/signalProperties/out");
 
     ///////////////////////////////////
 
     std::cout << "\nConnecting Ports\n" << std::endl;
 
-    while(!yarp.connect("/pidTunerGui/gains/out", "/pidTunerController/gains/in") ){Time::delay(0.1);}
-    while(!yarp.connect("/pidTunerController/gains/out", "/pidTunerGui/gains/in") ){Time::delay(0.1);}
+    // while(!yarp.connect("/pidTunerGui/gains/out", "/pidTunerController/gains/in") ){Time::delay(0.1);}
+    // while(!yarp.connect("/pidTunerController/gains/out", "/pidTunerGui/gains/in") ){Time::delay(0.1);}
+    //
+    // while(!yarp.connect("/pidTunerGui/goToHome/out", "/pidTunerController/goToHome/in") ){Time::delay(0.1);}
+    //
+    // while(!yarp.connect("/pidTunerGui/partAndJointIndexes/out", "/pidTunerController/partAndJointIndexes/in") ){Time::delay(0.1);}
+    //
+    // while(!yarp.connect("/pidTunerGui/controlMode/out", "/pidTunerController/controlMode/in") ){Time::delay(0.1);}
 
-    while(!yarp.connect("/pidTunerGui/goToHome/out", "/pidTunerController/goToHome/in") ){Time::delay(0.1);}
-
-    while(!yarp.connect("/pidTunerGui/partAndJointIndexes/out", "/pidTunerController/partAndJointIndexes/in") ){Time::delay(0.1);}
-
-    while(!yarp.connect("/pidTunerGui/controlMode/out", "/pidTunerController/controlMode/in") ){Time::delay(0.1);}
-
-    while(!yarp.connect("/pidTunerController/data/out", "/pidTunerGui/data/in") ){Time::delay(0.1);}
-
-    while(!yarp.connect("/pidTunerGui/signalProperties/out", "/pidTunerController/signalProperties/in") ){Time::delay(0.1);}
+    while(!yarp.connect("/pidTunerController/data:o", "/pidTunerGui/data:i") ){Time::delay(0.1);}
+    while(!yarp.connect("/pidTunerGui/rpc:c", "/pidTunerController/rpc:s") ){Time::delay(0.1);}
+    //
+    // while(!yarp.connect("/pidTunerGui/signalProperties/out", "/pidTunerController/signalProperties/in") ){Time::delay(0.1);}
 
 
     std::cout << "\nPorts connected.\n" << std::endl;
     return true;
 }
 
-MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow)
-{
-    signalAmplitude_POS_DEFAULT = 0.5;
-    signalStartTime_POS_DEFAULT = 0.5;
-    signalDuration_POS_DEFAULT = 1.5;
-
-    signalAmplitude_VEL_DEFAULT = 0.1;
-    signalStartTime_VEL_DEFAULT = 0.1;
-    signalDuration_VEL_DEFAULT = 0.5;
-
-    signalAmplitude_TOR_DEFAULT = 0.05;
-    signalStartTime_TOR_DEFAULT = 0.1;
-    signalDuration_TOR_DEFAULT = 0.5;
-
-
-    partsListVector.push_back("head");
-    partsListVector.push_back("torso");
-    partsListVector.push_back("left_arm");
-    partsListVector.push_back("right_arm");
-    partsListVector.push_back("left_leg");
-    partsListVector.push_back("right_leg");
-
-}
-
-MainWindow::~MainWindow()
-{
-    //delete ui;
-}
-
 void MainWindow::setCurrentPartAndJoint()
 {
     ui->partList->setCurrentIndex(partIndex);
     ui->jointList->setCurrentIndex(jointIndex);
-    getPidGains();
+    sendPartAndJointIndexes();
+
+    getPidValues();
 }
 
 void MainWindow::initializeGui()
@@ -196,7 +190,6 @@ void MainWindow::initializeGui()
     ui->partList->setCurrentIndex(partIndex);
     jointIndex = ui->jointList->count()-1;
     setCurrentPartAndJoint();
-    sendPartAndJointIndexes();
 
     ui->posContButton->click();
     ui->statusInfoLabel->setText("ready");
@@ -267,7 +260,7 @@ void MainWindow::addPartsToList()
 
 void MainWindow::on_gainTestButton_clicked()
 {
-    setPidGains();
+    setPidValues();
     /*  To get a vector using yarp ports we have to use a little workaround basically
         the data is saved in a yarp vector  then when we are ready to send each entry
         is sent individually. The first value is an int (0 or 1) which indicates to
@@ -468,7 +461,7 @@ void MainWindow::on_jointList_currentIndexChanged(int jointId)
 {
     jointIndex = jointId;
     if (initFinished && jointId>=0){
-        sendPartAndJointIndexes();
+        setCurrentPartAndJoint();
         plotTitle->setText(ui->jointList->currentText());
         ui->posPlot->replot();
         std::cout << "Joint Index has been changed." << std::endl;
@@ -488,10 +481,17 @@ void MainWindow::on_closeButton_clicked()
 
 void MainWindow::on_homeButton_clicked()
 {
-    Bottle& goToHomeBottle_out = goToHomeBufPort_out.prepare();
-    goToHomeBottle_out.clear();
-    goToHomeBottle_out.addInt(1); // tells the receiver to go to home config
-    goToHomeBufPort_out.write();
+    // Bottle& goToHomeBottle_out = goToHomeBufPort_out.prepare();
+    // goToHomeBottle_out.clear();
+    // goToHomeBottle_out.addInt(1); // tells the receiver to go to home config
+    // goToHomeBufPort_out.write();
+
+    Bottle send, reply;
+    send.addInt(GO_TO_HOME_POSTURE);
+    rpcClientPort.write(send,reply);
+    if(!reply.get(0).asInt()){
+        log.error() << "Could not send go to home posture command.";
+    }
 }
 
 void MainWindow::on_previousJointButton_clicked()
@@ -540,7 +540,7 @@ void MainWindow::on_nextJointButton_clicked()
 
         ui->jointList->setCurrentIndex(jointIndex);
 
-        // setCurrentPartAndJoint();
+        setCurrentPartAndJoint();
     }
 }
 
@@ -549,7 +549,7 @@ void MainWindow::on_posContButton_clicked(bool checked)
 {
     if(discardChanges()){
         if (checked){
-            controlMode = POSITION_MODE;
+            testControlMode = POSITION_MODE;
             controlMode_string = "position";
             sendControlMode();
             yPlotLabel = "q (deg)";
@@ -562,7 +562,7 @@ void MainWindow::on_posContButton_clicked(bool checked)
             signalDuration = signalDuration_POS;
             updateSignalPropertiesInGui();
             sendExcitationSignalProperties();
-            getPidGains();
+
         }
     }
     else{
@@ -575,7 +575,7 @@ void MainWindow::on_velContButton_clicked(bool checked)
 {
     if(discardChanges()){
         if (checked){
-            controlMode = VELOCITY_MODE;
+            testControlMode = VELOCITY_MODE;
             controlMode_string = "velocity";
             sendControlMode();
             yPlotLabel = "dq (deg/sec)";
@@ -587,7 +587,6 @@ void MainWindow::on_velContButton_clicked(bool checked)
             signalDuration = signalDuration_VEL;
             updateSignalPropertiesInGui();
             sendExcitationSignalProperties();
-            getPidGains();
         }
     }
     else{
@@ -599,7 +598,7 @@ void MainWindow::on_torContButton_clicked(bool checked)
 {
     if(discardChanges()){
         if (checked){
-            controlMode = TORQUE_MODE;
+            testControlMode = TORQUE_MODE;
             controlMode_string = "torque";
             sendControlMode();
             yPlotLabel = "tau (Nm)";
@@ -611,7 +610,6 @@ void MainWindow::on_torContButton_clicked(bool checked)
             signalDuration = signalDuration_TOR;
             updateSignalPropertiesInGui();
             sendExcitationSignalProperties();
-            getPidGains();
         }
     }
     else{
@@ -728,7 +726,7 @@ void MainWindow::on_gainResetButton_clicked()
         coulombVelThresh_new = coulombVelThresh_old;
         frictionCompensation_new = frictionCompensation_old;
     }
-    setPidGains();
+    refreshGainDisplays();
 
 }
 
@@ -793,99 +791,114 @@ void MainWindow::saveGains()
 }
 
 
-bool MainWindow::getPidGains()
+bool MainWindow::getPidValues()
 {
-    Bottle& gainsBottle_out = gainsBufPort_out.prepare(); // Get a place to store things.
-    gainsBottle_out.clear();
-    gainsBottle_out.addInt(0); // tells the receiver to just send the current gains
-    gainsBufPort_out.write();
+    // Bottle& gainsBottle_out = gainsBufPort_out.prepare(); // Get a place to store things.
+    // gainsBottle_out.clear();
+    // gainsBottle_out.addInt(0); // tells the receiver to just send the current gains
+    // gainsBufPort_out.write();
+    //
+    // Bottle controllerResponse;
+    // while(!gainsPort_in.read(controllerResponse))
+    // {
+    //     Time::delay(0.001);
+    // }
 
-    Bottle controllerResponse;
-    while(!gainsPort_in.read(controllerResponse))
-    {
-        Time::delay(0.001);
+    Bottle send, reply;
+    send.addInt(GET_PID_VALUES);
+    rpcClientPort.write(send,reply);
+    if(unBottlePid(reply)){
+        refreshGainDisplays();
+        return true;
+    }else{
+        log.error() << "Could not get PID values from control thread.";
+        return false;
     }
-    Kp_old                      = controllerResponse.get(0).asDouble();
-    Kd_old                      = controllerResponse.get(1).asDouble();
-    Ki_old                      = controllerResponse.get(2).asDouble();
-    Kff_old                     = controllerResponse.get(3).asDouble();
-    max_int_old                 = controllerResponse.get(4).asDouble();
-    scale_old                   = controllerResponse.get(5).asDouble();
-    max_output_old              = controllerResponse.get(6).asDouble();
-    offset_old                  = controllerResponse.get(7).asDouble();
-    stiction_up_old             = controllerResponse.get(8).asDouble();
-    stiction_down_old           = controllerResponse.get(9).asDouble();
-    Kp_new = Kp_old;
-    Kd_new = Kd_old;
-    Ki_new = Ki_old;
-    Kff_new = Kff_old;
-    max_int_new = max_int_old;
-    scale_new = scale_old;
-    max_output_new = max_output_old;
-    offset_new = offset_old;
-    stiction_up_new = stiction_up_old;
-    stiction_down_new = stiction_down_old;
 
-    if(usingJTC){
-        bemf_old                    = controllerResponse.get(10).asDouble();
-        coulombVelThresh_old        = controllerResponse.get(11).asDouble();
-        frictionCompensation_old    = controllerResponse.get(12).asDouble();
-        bemf_new = bemf_old;
-        coulombVelThresh_new = coulombVelThresh_old;
-        frictionCompensation_new = frictionCompensation_old;
-    }
-    refreshGainDisplays();
-    return true;
 }
 
-bool MainWindow::setPidGains()
+void MainWindow::bottlePid(Bottle& bottle)
+{
+    bottle.addDouble(Kp_new);
+    bottle.addDouble(Kd_new);
+    bottle.addDouble(Ki_new);
+    bottle.addDouble(Kff_new);
+    bottle.addDouble(max_int_new);
+    bottle.addDouble(scale_new);
+    bottle.addDouble(max_output_new);
+    bottle.addDouble(offset_new);
+    bottle.addDouble(stiction_up_new);
+    bottle.addDouble(stiction_down_new);
+    if(usingJTC){
+        bottle.addDouble(bemf_new);
+        bottle.addDouble(coulombVelThresh_new);
+        bottle.addDouble(frictionCompensation_new);
+    }
+}
+
+
+bool MainWindow::unBottlePid(Bottle& bottle)
+{
+    if(bottle.size()>1)
+    {
+        Kp_old                      = bottle.get(0).asDouble();
+        Kd_old                      = bottle.get(1).asDouble();
+        Ki_old                      = bottle.get(2).asDouble();
+        Kff_old                     = bottle.get(3).asDouble();
+        max_int_old                 = bottle.get(4).asDouble();
+        scale_old                   = bottle.get(5).asDouble();
+        max_output_old              = bottle.get(6).asDouble();
+        offset_old                  = bottle.get(7).asDouble();
+        stiction_up_old             = bottle.get(8).asDouble();
+        stiction_down_old           = bottle.get(9).asDouble();
+        Kp_new = Kp_old;
+        Kd_new = Kd_old;
+        Ki_new = Ki_old;
+        Kff_new = Kff_old;
+        max_int_new = max_int_old;
+        scale_new = scale_old;
+        max_output_new = max_output_old;
+        offset_new = offset_old;
+        stiction_up_new = stiction_up_old;
+        stiction_down_new = stiction_down_old;
+
+        if(usingJTC){
+            bemf_old                    = bottle.get(10).asDouble();
+            coulombVelThresh_old        = bottle.get(11).asDouble();
+            frictionCompensation_old    = bottle.get(12).asDouble();
+            bemf_new = bemf_old;
+            coulombVelThresh_new = coulombVelThresh_old;
+            frictionCompensation_new = frictionCompensation_old;
+        }
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+
+bool MainWindow::setPidValues()
 {
     // kpBufPort_out
 
-    Bottle& gainsBottle_out = gainsBufPort_out.prepare(); // Get a place to store things.
-    gainsBottle_out.clear();
-    gainsBottle_out.addInt(1); // tells the receiver that new gains are comming and should be set
-    gainsBottle_out.addDouble(Kp_new);
-    gainsBottle_out.addDouble(Kd_new);
-    gainsBottle_out.addDouble(Ki_new);
-    gainsBottle_out.addDouble(Kff_new);
-    gainsBottle_out.addDouble(max_int_new);
-    gainsBottle_out.addDouble(scale_new);
-    gainsBottle_out.addDouble(max_output_new);
-    gainsBottle_out.addDouble(offset_new);
-    gainsBottle_out.addDouble(stiction_up_new);
-    gainsBottle_out.addDouble(stiction_down_new);
-    if(usingJTC){
-        gainsBottle_out.addDouble(bemf_new);
-        gainsBottle_out.addDouble(coulombVelThresh_new);
-        gainsBottle_out.addDouble(frictionCompensation_new);
-    }
-    gainsBufPort_out.write();
+    // Bottle& gainsBottle_out = gainsBufPort_out.prepare(); // Get a place to store things.
+    //
+    // gainsBufPort_out.write();
 
-    Bottle controllerResponse;
-    while(!gainsPort_in.read(controllerResponse))
+    Bottle send, reply;
+    send.addInt(SET_PID_VALUES);
+    bottlePid(send);
+    rpcClientPort.write(send,reply);
+    if(unBottlePid(reply))
     {
-        Time::delay(0.001);
-    }
-    Kp_new = controllerResponse.get(0).asDouble();
-    Kd_new = controllerResponse.get(1).asDouble();
-    Ki_new = controllerResponse.get(2).asDouble();
-    Kff_new = controllerResponse.get(3).asDouble();
-    max_int_new = controllerResponse.get(4).asDouble();
-    scale_new = controllerResponse.get(5).asDouble();
-    max_output_new = controllerResponse.get(6).asDouble();
-    offset_new = controllerResponse.get(7).asDouble();
-    stiction_up_new = controllerResponse.get(8).asDouble();
-    stiction_down_new = controllerResponse.get(9).asDouble();
-    if(usingJTC){
-        bemf_new = controllerResponse.get(10).asDouble();
-        coulombVelThresh_new = controllerResponse.get(11).asDouble();
-        frictionCompensation_new = controllerResponse.get(12).asDouble();
+        refreshGainDisplays();
+        return true;
+    }else{
+        log.error() << "Could not read PID values from controller thread.";
+        return false;
     }
 
-
-    refreshGainDisplays();
-    return true;
 }
 
 
@@ -893,25 +906,47 @@ void MainWindow::sendPartAndJointIndexes()
 {
     std::cout << "Sending part and joint indexes: "<< partIndex << " & " << jointIndex << std::endl;
 
-    Bottle& partAndJointIndexesBottle_out = robotPartAndJointBufPort_out.prepare(); // Get a place to store things.
-    partAndJointIndexesBottle_out.clear();
-    partAndJointIndexesBottle_out.addInt(partIndex);
-    partAndJointIndexesBottle_out.addInt(jointIndex);
-    robotPartAndJointBufPort_out.write();
+    // Bottle& partAndJointIndexesBottle_out = robotPartAndJointBufPort_out.prepare(); // Get a place to store things.
+    // partAndJointIndexesBottle_out.clear();
+    // partAndJointIndexesBottle_out.addInt(partIndex);
+    // partAndJointIndexesBottle_out.addInt(jointIndex);
+    // robotPartAndJointBufPort_out.write();
 
-    std::cout << "Getting PID gains..." << std::endl;
-    getPidGains();
-    std::cout << "done." << std::endl;
+    Bottle send, reply;
+    send.addInt(SET_PART_AND_JOINT_INDEXES);
+    send.addInt(partIndex);
+    send.addInt(jointIndex);
+    rpcClientPort.write(send,reply);
+    if(reply.get(0).asInt()){
+        std::cout << "Getting PID gains..." << std::endl;
+        getPidValues();
+        std::cout << "done." << std::endl;
+    }else{
+        log.error() << "Could not set part and joint index.";
+    }
 
 
 }
 
 void MainWindow::sendControlMode()
 {
-    Bottle& controlModeBottle_out = controlModeBufPort_out.prepare(); // Get a place to store things.
-    controlModeBottle_out.clear();
-    controlModeBottle_out.addInt(controlMode);
-    controlModeBufPort_out.write();
+    Bottle send, reply;
+
+    send.addInt(SET_CONTROL_MODE);
+    send.addInt(testControlMode);
+    rpcClientPort.write(send,reply);
+
+    if (reply.get(0).asInt())
+    {
+        getPidValues();
+    }else{
+        log.error() << "Could not set control mode.";
+    }
+    // Bottle& controlModeBottle_out = controlModeBufPort_out.prepare(); // Get a place to store things.
+    // controlModeBottle_out.clear();
+    // controlModeBottle_out.addInt(controlMode);
+    // controlModeBufPort_out.write();
+
 }
 
 
@@ -1083,7 +1118,7 @@ void MainWindow::on_amplitude_in_editingFinished()
     else{
         ui->amplitude_in->setStyleSheet("QLineEdit { background: rgb(255, 255, 255)}");
 
-        switch (controlMode) {
+        switch (testControlMode) {
             case POSITION_MODE:
                 signalAmplitude_POS = amp_tmp;
             break;
@@ -1120,7 +1155,7 @@ void MainWindow::on_startTime_in_editingFinished()
     else{
         ui->startTime_in->setStyleSheet("QLineEdit { background: rgb(255, 255, 255)}");
 
-        switch (controlMode) {
+        switch (testControlMode) {
             case POSITION_MODE:
                 signalStartTime_POS = start_tmp;
             break;
@@ -1156,7 +1191,7 @@ void MainWindow::on_duration_in_editingFinished()
     else{
         ui->duration_in->setStyleSheet("QLineEdit { background: rgb(255, 255, 255)}");
 
-        switch (controlMode) {
+        switch (testControlMode) {
             case POSITION_MODE:
                 signalDuration_POS = dur_tmp;
             break;
@@ -1181,13 +1216,27 @@ void MainWindow::on_resetSignalPropButton_clicked()
 
 void MainWindow::sendExcitationSignalProperties()
 {
-    Bottle& sigPropsBottle_out = signalPropertiesBufPort_out.prepare(); // Get a place to store things.
-    sigPropsBottle_out.clear();
-    sigPropsBottle_out.addInt(ui->signalTypeComboBox->currentIndex()); // tells the receiver that new gains are comming and should be set
-    sigPropsBottle_out.addDouble(signalAmplitude);
-    sigPropsBottle_out.addDouble(signalStartTime);
-    sigPropsBottle_out.addDouble(signalDuration);
-    signalPropertiesBufPort_out.write();
+    // Bottle& sigPropsBottle_out = signalPropertiesBufPort_out.prepare(); // Get a place to store things.
+    // sigPropsBottle_out.clear();
+    // sigPropsBottle_out.addInt(ui->signalTypeComboBox->currentIndex()); // tells the receiver that new gains are comming and should be set
+    // sigPropsBottle_out.addDouble(signalAmplitude);
+    // sigPropsBottle_out.addDouble(signalStartTime);
+    // sigPropsBottle_out.addDouble(signalDuration);
+    // signalPropertiesBufPort_out.write();
+
+    testSignalType = STEP;
+    Bottle send, reply;
+    send.addInt(SET_SIGNAL_PROPERTIES);
+    send.addInt(testSignalType);
+    send.addDouble(signalAmplitude);
+    send.addDouble(signalStartTime);
+    send.addDouble(signalDuration);
+    rpcClientPort.write(send,reply);
+    testSignalType = static_cast<SignalType>(reply.get(1).asInt());
+    signalAmplitude = reply.get(2).asDouble();
+    signalStartTime = reply.get(3).asDouble();
+    signalDuration = reply.get(4).asDouble();
+
 }
 
 
@@ -1206,7 +1255,7 @@ void MainWindow::setSignalPropertiesToDefaults()
     signalDuration_TOR  =   signalDuration_TOR_DEFAULT;
 
 
-    switch (controlMode) {
+    switch (testControlMode) {
         case POSITION_MODE:
         signalAmplitude = signalAmplitude_POS;
         signalStartTime = signalStartTime_POS;

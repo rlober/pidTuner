@@ -1,3 +1,6 @@
+#ifndef THREAD_H
+#define THREAD_H
+
 /*!
 *  \file       thread.h
 *  \brief      CtrlThread class header. This file declares the
@@ -28,9 +31,9 @@
 * along with pidTuner.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <yarp/os/Network.h>
-#include <yarp/os/BufferedPort.h>
-#include <yarp/os/Port.h>
+// #include <yarp/os/Network.h>
+// #include <yarp/os/BufferedPort.h>
+// #include <yarp/os/Port.h>
 #include <yarp/os/all.h>
 
 
@@ -60,9 +63,25 @@
 #include <yarp/dev/ITorqueControl.h>
 #include <yarp/dev/IControlMode2.h>
 
+#include <math.h>
+#include <yarp/logger/YarpLogger.h>
+
+#include "ui_mainwindow.h"
+
+#include <yarp/sig/Vector.h>
+#include <yarp/math/Math.h>
+
+#include <cmath>
+#include <iostream>
+
+#include <boost/chrono.hpp>
+#include <boost/thread.hpp>
+
+#include <MessageVocabulary.h>
 
 
-// YARP_DECLARE_DEVICES(icubmod)
+#define DEG_TO_RAD M_PI / 180.
+#define RAD_TO_DEG 180. / M_PI
 
 using namespace yarp::os;
 using namespace yarp::dev;
@@ -113,6 +132,17 @@ class CtrlThread: public RateThread
         std::string excludedPart;
 
 
+        /************** DataProcessor *************/
+        class RpcPortCallback : public PortReader {
+            private:
+                CtrlThread& ctThread;
+
+            public:
+                RpcPortCallback(CtrlThread& ctThreadRef);
+
+                virtual bool read(ConnectionReader& connection);
+        };
+        /************** DataProcessor *************/
 
 
 
@@ -172,8 +202,9 @@ class CtrlThread: public RateThread
                 coulombVelThresh_thread,
                 frictionCompensation_thread;
 
-        void sendPidGains();
-        void parseIncomingGains(Bottle *newGainMessage);
+        void bottlePid(Bottle* bottle);
+        void bottleSignalProperties(Bottle* bottle);
+        void parseIncomingPid(Bottle *newGainMessage);
         void parseIncomingControlMode(Bottle *newControlModeMessage);
         void parseIncomingSignalProperties(Bottle *newControlModeMessage);
         void updatePidInformation();
@@ -183,19 +214,26 @@ class CtrlThread: public RateThread
         void finalizeDataVectors();
         void sendDataToGui();
         bool jointLimitsReached();
+        void parseRpcMessage(Bottle *input, Bottle *reply);
 
 
-        BufferedPort<Bottle>    gainsBufPort_in; // incoming new gains
-        Port                    gainsPort_out; // outgoing current gains
+        // BufferedPort<Bottle>    gainsBufPort_in; // incoming new gains
+        // Port                    gainsPort_out; // outgoing current gains
 
-        BufferedPort<Bottle>    goToHomeBufPort_in; // incoming gotToHome Command
+        // BufferedPort<Bottle>    goToHomeBufPort_in; // incoming gotToHome Command
 
-        BufferedPort<Bottle>    robotPartAndJointBufPort_in; //incoming part and joint index
+        // BufferedPort<Bottle>    robotPartAndJointBufPort_in; //incoming part and joint index
 
-        BufferedPort<Bottle>    controlModeBufPort_in;
+        // BufferedPort<Bottle>    controlModeBufPort_in;
 
         Port                    dataPort_out;
 
-        BufferedPort<Bottle>    signalPropertiesBufPort_in;
+        // BufferedPort<Bottle>    signalPropertiesBufPort_in;
+        RpcPortCallback rpcCallback;
+        RpcServer rpcServerPort;
+
+        ControlMode testControlMode;
+        SignalType  testSignalType;
 
 };
+#endif

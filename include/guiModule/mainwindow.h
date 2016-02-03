@@ -36,12 +36,12 @@
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QLineEdit>
-
-#include <yarp/os/Network.h>
-#include <yarp/os/BufferedPort.h>
-#include <yarp/os/Port.h>
+#include "ui_mainwindow.h"
+// #include <yarp/os/Network.h>
+// #include <yarp/os/BufferedPort.h>
+// #include <yarp/os/Port.h>
 #include <yarp/os/all.h>
-#include <yarp/os/ResourceFinder.h>
+// #include <yarp/os/ResourceFinder.h>
 
 #include <boost/scoped_ptr.hpp>
 
@@ -49,13 +49,17 @@
 
 #include "qcustomplot.h"
 
+#include <MessageVocabulary.h>
+
+#include <boost/chrono.hpp>
+#include <boost/thread.hpp>
 
 //
 // #include <yarp/os/RateThread.h>
 // #include <yarp/os/Time.h>
-// #include <yarp/sig/Vector.h>
+#include <yarp/sig/Vector.h>
 // #include <yarp/sig/all.h>
-// #include <yarp/math/Math.h>
+#include <yarp/math/Math.h>
 
 // YARP_DECLARE_DEVICES(icubmod)
 
@@ -124,8 +128,8 @@ private:
     bool discardChanges();
     void saveGains();
     void refreshGainDisplays();
-    bool getPidGains();
-    bool setPidGains();
+    bool getPidValues();
+    bool setPidValues();
     void sendPartAndJointIndexes();
     void sendControlMode();
     void writeDataToLogs();
@@ -135,6 +139,9 @@ private:
     void updateSignalPropertiesInGui();
     void setSignalPropertiesToDefaults();
     double getValueFromUserInput(QLineEdit* userInputBox);
+    void bottlePid(yarp::os::Bottle& bottle);
+    bool unBottlePid(yarp::os::Bottle& bottle);
+
 
 
     //Variables
@@ -142,7 +149,7 @@ private:
     boost::scoped_ptr<QCPPlotTitle> plotTitle;
 
     bool isOnlyMajorJoints, gainsHaveBeenChanged;
-    int controlMode, partIndex, jointIndex;
+    int partIndex, jointIndex;
 
     bool initFinished;
     std::vector<std::string> partsListVector;
@@ -203,25 +210,28 @@ private:
 
     yarp::os::Network yarp;
 
-    yarp::os::BufferedPort<yarp::os::Bottle> gainsBufPort_out;
-    yarp::os::Port                           gainsPort_in;
+    // yarp::os::BufferedPort<yarp::os::Bottle> gainsBufPort_out;
+    // yarp::os::Port                           gainsPort_in;
 
 
-    yarp::os::BufferedPort<yarp::os::Bottle> goToHomeBufPort_out;
+    // yarp::os::BufferedPort<yarp::os::Bottle> goToHomeBufPort_out;
 
-    yarp::os::BufferedPort<yarp::os::Bottle> robotPartAndJointBufPort_out;
+    // yarp::os::BufferedPort<yarp::os::Bottle> robotPartAndJointBufPort_out;
 
-    yarp::os::BufferedPort<yarp::os::Bottle> controlModeBufPort_out;
+    // yarp::os::BufferedPort<yarp::os::Bottle> controlModeBufPort_out;
 
 
     yarp::os::Port                           dataPort_in;
 
-    yarp::os::BufferedPort<yarp::os::Bottle> signalPropertiesBufPort_out;
+    // yarp::os::BufferedPort<yarp::os::Bottle> signalPropertiesBufPort_out;
 
+    yarp::os::RpcClient rpcClientPort;
+
+    ControlMode testControlMode;
+    SignalType  testSignalType;
 
     std::string controlMode_string;
     std::string logFilePath;
-
 };
 
 #endif // MAINWINDOW_H

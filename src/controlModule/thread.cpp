@@ -31,21 +31,11 @@
 
 
 #include "controlModule/thread.h"
-#include <math.h>
-#include <yarp/logger/YarpLogger.h>
 
-#define DEG_TO_RAD M_PI / 180.
-#define RAD_TO_DEG 180. / M_PI
 
-static const int POSITION_MODE = 0;
-static const int VELOCITY_MODE = 1;
-static const int TORQUE_MODE = 2;
 
-#define SIG_STEP 0
-#define SIG_SIGN 1
-#define SIG_TRIANGLE 2
-#define SIG_SQUARE 3
-#define SIG_DIRAC 4
+
+
 
 using namespace boost;
 using namespace boost::filesystem;
@@ -55,7 +45,9 @@ CtrlThread::CtrlThread(const int period, const std::string Robot_Name, const std
     RateThread(period),
     robotName(Robot_Name),
     excludedPart(Excluded_Part),
-    usingJTC(isUsingJtc)
+    usingJTC(isUsingJtc),
+    rpcCallback(*this),
+    testControlMode(POSITION_MODE)
 {
     if (robotName.size()==0) {
         log.info() << " [WARNING] Robot name was not initialized. Defaulting to robotName=icubGazeboSim.";
@@ -87,10 +79,6 @@ bool CtrlThread::threadInit()
     //baseFilePath = "/home/ryan/Desktop/";
 
 
-    isPositionMode  = true;
-    isVelocityMode  = false;
-    isTorqueMode    = false;
-    Kp_thread = Kd_thread = Ki_thread = 0.0;
 
     partIndex = 0;
     jointIndex = 0;
@@ -144,18 +132,21 @@ bool CtrlThread::threadInit()
 
     //Open yarp ports
     bool ok = true;
-    ok &= gainsBufPort_in.open("/pidTunerController/gains/in");
-    ok &= gainsPort_out.open("/pidTunerController/gains/out");
+    // ok &= gainsBufPort_in.open("/pidTunerController/gains/in");
+    // ok &= gainsPort_out.open("/pidTunerController/gains/out");
+    //
+    // ok &= goToHomeBufPort_in.open("/pidTunerController/goToHome/in");
+    //
+    // ok &= robotPartAndJointBufPort_in.open("/pidTunerController/partAndJointIndexes/in");
+    //
+    // ok &= controlModeBufPort_in.open("/pidTunerController/controlMode/in");
 
-    ok &= goToHomeBufPort_in.open("/pidTunerController/goToHome/in");
-
-    ok &= robotPartAndJointBufPort_in.open("/pidTunerController/partAndJointIndexes/in");
-
-    ok &= controlModeBufPort_in.open("/pidTunerController/controlMode/in");
-
-    ok &= dataPort_out.open("/pidTunerController/data/out");
-
-    ok &= signalPropertiesBufPort_in.open("/pidTunerController/signalProperties/in");
+    ok &= dataPort_out.open("/pidTunerController/data:o");
+    ok &= rpcServerPort.open("/pidTunerController/rpc:s");
+    if(ok){
+        rpcServerPort.setReader(rpcCallback);
+    }
+    // ok &= signalPropertiesBufPort_in.open("/pidTunerController/signalProperties/in");
 
     return ok;
 
@@ -175,45 +166,7 @@ void CtrlThread::afterStart(bool s)
 
 void CtrlThread::run()
 {
-    // Check if new gains have come in or if the user wants the current gains
-    Bottle *gainsMessage = gainsBufPort_in.read(false);
-    if (gainsMessage!=NULL) {
-        log.info() << " Received gains message.";
-        resizeDataVectors();
-        parseIncomingGains(gainsMessage);
-        sendPidGains();
-    }
 
-    // Check if the user wants to go to Home Pose
-    Bottle *goToHomeMessage = goToHomeBufPort_in.read(false);
-    if (goToHomeMessage!=NULL) {
-        log.info() << " Received go to home message.";
-        if(goToHomeMessage->get(0).asInt()==1){
-            // setCommandToHome();
-            goToHome();
-        }
-    }
-
-    Bottle *robotPartAndJointMessage = robotPartAndJointBufPort_in.read(false);
-    if (robotPartAndJointMessage!=NULL) {
-        log.info() << " Received part and joint index message.";
-        partIndex = robotPartAndJointMessage->get(0).asInt();
-        jointIndex = robotPartAndJointMessage->get(1).asInt();
-        updatePidInformation();
-    }
-
-    Bottle *controlModeMessage = controlModeBufPort_in.read(false);
-    if (controlModeMessage!=NULL) {
-        log.info() << " Received control mode message.";
-        parseIncomingControlMode(controlModeMessage);
-        updatePidInformation();
-    }
-
-    Bottle *signalPropertiesMessage = signalPropertiesBufPort_in.read(false);
-    if (signalPropertiesMessage!=NULL) {
-        log.info() << " Received signal properties message.";
-        parseIncomingSignalProperties(signalPropertiesMessage);
-    }
 
     double cmd;
     bool runningTest = excitationSignal(cmd);
@@ -411,40 +364,54 @@ bool CtrlThread::goToHome()
 
 bool CtrlThread::sendJointCommand(double cmd)
 {
-
-    if (isPositionMode)
-    {
-        // iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_POSITION);
-        iPos[partIndex]->positionMove(jointIndex, cmd);
+    bool retVal = false;
+    switch (testControlMode) {
+        case POSITION_MODE:
+            iPos[partIndex]->positionMove(jointIndex, cmd);
+            retVal = true;
+            break;
+        case VELOCITY_MODE:
+            iVel[partIndex]->velocityMove(1, &jointIndex, &cmd);
+            retVal = true;
+            break;
+        case TORQUE_MODE:
+            iTrq[partIndex]->setRefTorque(jointIndex, cmd);
+            retVal = true;
+            break;
     }
+    return retVal;
 
-    else if (isVelocityMode)
-    {
-        /*
-            Using IVelocityControl2
-        */
-
-        // iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_VELOCITY);
-        iVel[partIndex]->velocityMove(1, &jointIndex, &cmd);//jointVector.data(), cmdVector.data());
-
-        /*
-            Another option is to use IVelocityControl and use:
-            iVel[partIndex]->velocityMove(jointIndex, cmd);
-
-        */
-
-
-    }
-
-    else if (isTorqueMode)
-    {
-        // iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_TORQUE);
-        iTrq[partIndex]->setRefTorque(jointIndex, cmd);
-    }
-
-    else{return false;}
-
-return true;
+    // if (isPositionMode)
+    // {
+    //     // iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_POSITION);
+    //     iPos[partIndex]->positionMove(jointIndex, cmd);
+    // }
+    //
+    // else if (isVelocityMode)
+    // {
+    //     /*
+    //         Using IVelocityControl2
+    //     */
+    //
+    //     // iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_VELOCITY);
+    //     iVel[partIndex]->velocityMove(1, &jointIndex, &cmd);//jointVector.data(), cmdVector.data());
+    //
+    //     /*
+    //         Another option is to use IVelocityControl and use:
+    //         iVel[partIndex]->velocityMove(jointIndex, cmd);
+    //
+    //     */
+    //
+    //
+    // }
+    //
+    // else if (isTorqueMode)
+    // {
+    //     // iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_TORQUE);
+    //     iTrq[partIndex]->setRefTorque(jointIndex, cmd);
+    // }
+    //
+    // else{return false;}
 
 }
 
@@ -465,120 +432,89 @@ void CtrlThread::setCommandToHome()
 }
 */
 
-void CtrlThread::parseIncomingGains(Bottle *newGainMessage)
+void CtrlThread::parseIncomingPid(Bottle *newGainMessage)
 {
-    int messageIndicator = newGainMessage->get(0).asInt();
-    if (messageIndicator == 1)
+
+    Pid newPid;
+    newPid.setKp(newGainMessage->get(1).asDouble());
+    newPid.setKd(newGainMessage->get(2).asDouble());
+    newPid.setKi(newGainMessage->get(3).asDouble());
+    newPid.setKff(newGainMessage->get(4).asDouble());
+    newPid.setMaxInt(newGainMessage->get(5).asDouble());
+    newPid.setScale(newGainMessage->get(6).asDouble());
+    newPid.setMaxOut(newGainMessage->get(7).asDouble());
+    newPid.setOffset(newGainMessage->get(8).asDouble());
+    newPid.setStictionValues(newGainMessage->get(9).asDouble(), newGainMessage->get(10).asDouble());
+    if(usingJTC){
+        //get bemf, coulombVelThresh and frictionComp.
+    }
+    //send new Pid to device
+
+    if (iPids[partIndex]==NULL)
     {
-        log.info()   << " Trying to set part, "<<partIndex<<" & joint, "<< jointIndex << " to PID:\n"
-                    << "Kp = " << newGainMessage->get(1).asDouble()
-                    << " Kd = " << newGainMessage->get(2).asDouble()
-                    << " Ki = " << newGainMessage->get(3).asDouble()
-                   ;
-        Pid newPid;
-        newPid.setKp(newGainMessage->get(1).asDouble());
-        newPid.setKd(newGainMessage->get(2).asDouble());
-        newPid.setKi(newGainMessage->get(3).asDouble());
-        newPid.setKff(newGainMessage->get(4).asDouble());
-        newPid.setMaxInt(newGainMessage->get(5).asDouble());
-        newPid.setScale(newGainMessage->get(6).asDouble());
-        newPid.setMaxOut(newGainMessage->get(7).asDouble());
-        newPid.setOffset(newGainMessage->get(8).asDouble());
-        newPid.setStictionValues(newGainMessage->get(9).asDouble(), newGainMessage->get(10).asDouble());
-        if(usingJTC){
-            //get bemf, coulombVelThresh and frictionComp.
-        }
-        //send new Pid to device
+        log.error() << " there is no iPid pointer here...";
+    }
+    else
+    {
+        switch (testControlMode) {
+            case POSITION_MODE:
+                if (!iPids[partIndex]->setPid(jointIndex, newPid)) {
+                    log.error()<<"Position PID send failed...";
+                }
+                while(!iEnc[partIndex]->getEncoder(jointIndex, &homeVectors[partIndex][jointIndex] ))
+                {
+                    Time::delay(0.001);
+                }
+                iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_POSITION_DIRECT);
+                iPos[partIndex]->setRefSpeed(jointIndex, 10.0);
+                break;
 
-        if (iPids[partIndex]==NULL) {
-            log.error() << " there is no iPid pointer here...";
-        }
-        if(isPositionMode){
-            if (!iPids[partIndex]->setPid(jointIndex, newPid)) {
-                log.error()<<"Position PID send failed...";
-            }
-        }
-        else if(isVelocityMode){
-            if (!iVel[partIndex]->setVelPid(jointIndex, newPid)) {
-                log.error()<<"Velocity PID send failed...";
-            }
-        }
-        else if(isTorqueMode){
-            if (!iTrq[partIndex]->setTorquePid(jointIndex, newPid)) {
-                log.error()<<"Torque PID send failed...";
-            }
-        }
+            case VELOCITY_MODE:
+                if (!iVel[partIndex]->setVelPid(jointIndex, newPid)) {
+                    log.error()<<"Velocity PID send failed...";
+                }
+                iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_VELOCITY);
+                break;
 
-        //Get those gains from the device to make sure they set properly
-
-        updatePidInformation();
-        log.info() << "gains set to device: \n" << " -- Kp = "<< Kp_thread <<" Kd = "<< Kd_thread << " Ki = "<< Ki_thread;
-
-
-        triggerTime = Time::now();
-
-        if (isTorqueMode){
-            while(!iTrq[partIndex]->getTorque(jointIndex, &stationaryTorque) )
-            {
-                Time::delay(0.001);
-            }
-        }else if (isPositionMode)
-        {
-            while(!iEnc[partIndex]->getEncoder(jointIndex, &homeVectors[partIndex][jointIndex] ))
-            {
-                Time::delay(0.001);
-            }
-        }
-
-        applyExcitationSignal = true;
-
-        if (isPositionMode)
-        {
-            iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_POSITION_DIRECT);
-            iPos[partIndex]->setRefSpeed(jointIndex, 10.0);
-        }
-        else if (isVelocityMode)
-        {
-            iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_VELOCITY);
-        }
-        else if (isTorqueMode)
-        {
-            iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_TORQUE);
+            case TORQUE_MODE:
+                if (!iTrq[partIndex]->setTorquePid(jointIndex, newPid)) {
+                    log.error()<<"Torque PID send failed...";
+                }
+                while(!iTrq[partIndex]->getTorque(jointIndex, &stationaryTorque) )
+                {
+                    Time::delay(0.001);
+                }
+                iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_TORQUE);
+                break;
         }
 
     }
+
+        //Get those gains from the device to make sure they set properly
+
+    updatePidInformation();
+    triggerTime = Time::now();
+    applyExcitationSignal = true;
 
 }
 
 void CtrlThread::parseIncomingControlMode(Bottle *newControlModeMessage)
 {
-    int newControlMode = newControlModeMessage->get(0).asInt();
-    switch (newControlMode) {
+    testControlMode = static_cast<ControlMode>(newControlModeMessage->get(1).asInt());
+    switch (testControlMode) {
         case POSITION_MODE:
-            isPositionMode = true;
-            isVelocityMode = false;
-            isTorqueMode = false;
             log.info() << " Switching to POSITION control.";
             break;
 
         case VELOCITY_MODE:
-            isPositionMode = false;
-            isVelocityMode = true;
-            isTorqueMode = false;
             log.info() << " Switching to VELOCITY control.";
             break;
 
         case TORQUE_MODE:
-            isPositionMode = false;
-            isVelocityMode = false;
-            isTorqueMode = true;
             log.info() << " Switching to TORQUE control.";
             break;
 
         default:
-            isPositionMode = true;
-            isVelocityMode = false;
-            isTorqueMode = false;
             log.warning() << " Defaulting to POSITION control.";
             break;
     }
@@ -589,57 +525,57 @@ void CtrlThread::parseIncomingControlMode(Bottle *newControlModeMessage)
      */
 }
 
+void CtrlThread::bottleSignalProperties(Bottle* bottle)
+{
+    bottle->clear();
+    bottle->addInt(testSignalType);
+    bottle->addDouble(signalAmplitude);
+    bottle->addDouble(signalStartTime);
+    bottle->addDouble(signalDuration);
+}
+
 void CtrlThread::parseIncomingSignalProperties(Bottle *newSignalPropertiesMessage)
 {
-    int signalType = newSignalPropertiesMessage->get(0).asInt();
-    switch (signalType) {
-        case SIG_STEP:
-        signalAmplitude = newSignalPropertiesMessage->get(1).asDouble();
-        signalStartTime = newSignalPropertiesMessage->get(2).asDouble();
-        signalDuration = newSignalPropertiesMessage->get(3).asDouble();
-        break;
+    testSignalType = static_cast<SignalType>(newSignalPropertiesMessage->get(1).asInt());
+    signalAmplitude = newSignalPropertiesMessage->get(2).asDouble();
+    signalStartTime = newSignalPropertiesMessage->get(3).asDouble();
+    signalDuration = newSignalPropertiesMessage->get(4).asDouble();
 
-        case SIG_SIGN:
-        /*
-            Need to implement these signals...
-        */
-        signalAmplitude = newSignalPropertiesMessage->get(1).asDouble();
-        signalStartTime = newSignalPropertiesMessage->get(2).asDouble();
-        signalDuration = newSignalPropertiesMessage->get(3).asDouble();
-        break;
+    switch (testSignalType) {
+        case STEP:
+            log.info() << "Got new signal type: STEP";
+            break;
 
-        case SIG_TRIANGLE:
-        /*
-            Need to implement these signals...
-        */
-        signalAmplitude = newSignalPropertiesMessage->get(1).asDouble();
-        signalStartTime = newSignalPropertiesMessage->get(2).asDouble();
-        signalDuration = newSignalPropertiesMessage->get(3).asDouble();
-        break;
+        case SIGN:
+            log.info() << "Got new signal type: SIGN";
+            /*
+                Need to implement these signals...
+            */
+            break;
 
-        case SIG_SQUARE:
-        /*
-            Need to implement these signals...
-        */
-        signalAmplitude = newSignalPropertiesMessage->get(1).asDouble();
-        signalStartTime = newSignalPropertiesMessage->get(2).asDouble();
-        signalDuration = newSignalPropertiesMessage->get(3).asDouble();
-        break;
+        case TRIANGLE:
+            log.info() << "Got new signal type: TRIANGLE";
+            /*
+                Need to implement these signals...
+            */
+            break;
 
-        case SIG_DIRAC:
-        /*
-            Need to implement these signals...
-        */
-        signalAmplitude = newSignalPropertiesMessage->get(1).asDouble();
-        signalStartTime = newSignalPropertiesMessage->get(2).asDouble();
-        signalDuration = newSignalPropertiesMessage->get(3).asDouble();
-        break;
+        case SQUARE:
+            log.info() << "Got new signal type: SQUARE";
+            /*
+                Need to implement these signals...
+            */
+            break;
+
+        case DIRAC:
+            log.info() << "Got new signal type: DIRAC";
+            /*
+                Need to implement these signals...
+            */
+            break;
 
         default:
-        signalAmplitude = newSignalPropertiesMessage->get(1).asDouble();
-        signalStartTime = newSignalPropertiesMessage->get(2).asDouble();
-        signalDuration = newSignalPropertiesMessage->get(3).asDouble();
-        break;
+            break;
     }
     log.info() << " Received new signal properties:";
     log.info() << " -- Signal Amplitude = " << signalAmplitude;
@@ -657,19 +593,17 @@ void CtrlThread::updatePidInformation()
     else{log.info() << " trying to get PID from joint.";}
 
     bool res;
-    if(isPositionMode){
-        res = iPids[partIndex]->getPid(jointIndex, &currentPid);
+    switch (testControlMode) {
+        case POSITION_MODE:
+            res = iPids[partIndex]->getPid(jointIndex, &currentPid);
+            break;
+        case VELOCITY_MODE:
+            res = iVel[partIndex]->getVelPid(jointIndex, &currentPid);
+            break;
+        case TORQUE_MODE:
+            res = iTrq[partIndex]->getTorquePid(jointIndex, &currentPid);
+            break;
     }
-    else if (isVelocityMode) {
-        res = iVel[partIndex]->getVelPid(jointIndex, &currentPid);
-    }
-    else if (isTorqueMode) {
-        res = iTrq[partIndex]->getTorquePid(jointIndex, &currentPid);
-    }
-
-    // if (currentPid==NULL) {
-    //     log.info() << " currentPid is NULL";
-    // }
 
     if(res)
     {
@@ -696,27 +630,24 @@ void CtrlThread::updatePidInformation()
 
 
 
-void CtrlThread::sendPidGains()
+void CtrlThread::bottlePid(Bottle* bottle)
 {
-    Bottle gainsBottle_out; // Get a place to store things.
-    gainsBottle_out.clear();
-    gainsBottle_out.addDouble(Kp_thread);
-    gainsBottle_out.addDouble(Kd_thread);
-    gainsBottle_out.addDouble(Ki_thread);
-    gainsBottle_out.addDouble(Kff_thread);
-    gainsBottle_out.addDouble(max_int_thread);
-    gainsBottle_out.addDouble(scale_thread);
-    gainsBottle_out.addDouble(max_output_thread);
-    gainsBottle_out.addDouble(offset_thread);
-    gainsBottle_out.addDouble(stiction_up_thread);
-    gainsBottle_out.addDouble(stiction_down_thread);
+    bottle->addDouble(Kp_thread);
+    bottle->addDouble(Kd_thread);
+    bottle->addDouble(Ki_thread);
+    bottle->addDouble(Kff_thread);
+    bottle->addDouble(max_int_thread);
+    bottle->addDouble(scale_thread);
+    bottle->addDouble(max_output_thread);
+    bottle->addDouble(offset_thread);
+    bottle->addDouble(stiction_up_thread);
+    bottle->addDouble(stiction_down_thread);
     if(usingJTC){
 
-        gainsBottle_out.addDouble(bemf_thread);
-        gainsBottle_out.addDouble(coulombVelThresh_thread);
-        gainsBottle_out.addDouble(frictionCompensation_thread);
+        bottle->addDouble(bemf_thread);
+        bottle->addDouble(coulombVelThresh_thread);
+        bottle->addDouble(frictionCompensation_thread);
     }
-    gainsPort_out.write(gainsBottle_out);
 }
 
 
@@ -784,47 +715,50 @@ bool CtrlThread::excitationSignal(double &cmd)
 
         if (relativeT<signalStartTime)
         {
-            if(isPositionMode)
-                cmd = homeVectors[partIndex][jointIndex];
-
-            else if(isVelocityMode)
-                cmd = 0.0;
-
-            else if(isTorqueMode)
-                cmd = stationaryTorque;
-
+            switch (testControlMode) {
+                case POSITION_MODE:
+                    cmd = homeVectors[partIndex][jointIndex];
+                    break;
+                case VELOCITY_MODE:
+                    cmd = 0.0;
+                    break;
+                case TORQUE_MODE:
+                    cmd = stationaryTorque;
+                    break;
+            }
             return true;
         }
         else if (relativeT>=signalStartTime && relativeT<(signalStartTime+signalDuration))
         {
-            if(isPositionMode)
-                cmd = homeVectors[partIndex][jointIndex] + signalAmplitude;
-
-            else if(isVelocityMode)
-                cmd = signalAmplitude;
-
-            else if(isTorqueMode)
-                cmd = stationaryTorque + signalAmplitude;
-
+            switch (testControlMode) {
+                case POSITION_MODE:
+                    cmd = homeVectors[partIndex][jointIndex] + signalAmplitude;
+                    break;
+                case VELOCITY_MODE:
+                    cmd = signalAmplitude;
+                    break;
+                case TORQUE_MODE:
+                    cmd = stationaryTorque + signalAmplitude;
+                    break;
+            }
             return true;
         }
         else if (relativeT>=(signalStartTime+signalDuration))
         {
-
-            if(isPositionMode)
-                cmd = homeVectors[partIndex][jointIndex];
-
-            else if(isVelocityMode)
-                cmd = 0.0;
-
-            else if(isTorqueMode)
-                cmd = stationaryTorque;
-
+            switch (testControlMode) {
+                case POSITION_MODE:
+                    cmd = homeVectors[partIndex][jointIndex];
+                    break;
+                case VELOCITY_MODE:
+                    cmd = 0.0;
+                    break;
+                case TORQUE_MODE:
+                    cmd = stationaryTorque;
+                    break;
+            }
             finalizeDataVectors();
             applyExcitationSignal = false;
-
             iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_POSITION);
-
             return true;
         }
 
@@ -839,7 +773,7 @@ bool CtrlThread::excitationSignal(double &cmd)
 
 double CtrlThread::getJointResponse()
 {
-    if (isPositionMode || isVelocityMode)
+    if (testControlMode == POSITION_MODE || testControlMode == VELOCITY_MODE)
     {
         while(!iEnc[partIndex]->getEncoders(encoders[partIndex].data()) )
         {
@@ -849,7 +783,7 @@ double CtrlThread::getJointResponse()
         return encoders[partIndex][jointIndex];
     }
 
-    else if (isTorqueMode)
+    else if (testControlMode == TORQUE_MODE)
     {
         double measuredTorque;
         while(!iTrq[partIndex]->getTorque(jointIndex, &measuredTorque) )
@@ -907,4 +841,145 @@ bool CtrlThread::jointLimitsReached()
     else{return false;}
 
 
+}
+
+
+/**************************************************************************************************
+                                    Nested PortReader Class
+**************************************************************************************************/
+CtrlThread::RpcPortCallback::RpcPortCallback(CtrlThread& ctThreadRef):ctThread(ctThreadRef)
+{
+    //do nothing
+}
+
+bool CtrlThread::RpcPortCallback::read(ConnectionReader& connection)
+{
+    Bottle input, reply;
+    bool ok = input.read(connection);
+    if (!ok)
+        return false;
+
+    else{
+        ctThread.parseRpcMessage(&input, &reply);
+        ConnectionWriter *returnToSender = connection.getWriter();
+        if (returnToSender!=NULL) {
+            reply.write(*returnToSender);
+        }
+        return true;
+    }
+}
+/**************************************************************************************************
+**************************************************************************************************/
+
+
+void CtrlThread::parseRpcMessage(Bottle *input, Bottle *reply)
+{
+    int tag = input->get(0).asInt();
+
+    switch (tag) {
+
+        case SET_CONTROL_MODE:
+            log.info() << "SET_CONTROL_MODE";
+            parseIncomingControlMode(input);
+            updatePidInformation();
+            reply->clear();
+            reply->addInt(1); // Change this to check check that the control mode was set.
+            break;
+
+        case GET_CONTROL_MODE:
+            log.info() << "GET_CONTROL_MODE";
+            reply->clear();
+            reply->addInt(testControlMode);
+            break;
+
+        case SET_PID_VALUES:
+            // Check if new gains have come in or if the user wants the current gains
+            log.info() << "SET_PID_VALUES";
+            resizeDataVectors();
+            parseIncomingPid(input);
+            bottlePid(reply);
+            break;
+
+        case GET_PID_VALUES:
+            log.info() << "GET_PID_VALUES";
+            updatePidInformation();
+            bottlePid(reply);
+            break;
+
+        case SET_PART_AND_JOINT_INDEXES:
+            log.info() << "SET_PART_AND_JOINT_INDEXES";
+            partIndex = input->get(1).asInt();
+            jointIndex = input->get(2).asInt();
+            updatePidInformation();
+            reply->clear();
+            reply->addInt(1); // Change this to check check that the control mode was set.
+            break;
+
+        case GET_PART_AND_JOINT_INDEXES:
+            log.info() << "GET_PART_AND_JOINT_INDEXES";
+            reply->clear();
+            reply->addInt(partIndex);
+            reply->addInt(jointIndex);
+            break;
+
+        case SET_SIGNAL_PROPERTIES:
+            log.info() << "SET_SIGNAL_PROPERTIES";
+            parseIncomingSignalProperties(input);
+            bottleSignalProperties(reply);
+            break;
+
+        case GET_SIGNAL_PROPERTIES:
+            log.info() << "GET_SIGNAL_PROPERTIES";
+            bottleSignalProperties(reply);
+            break;
+
+        case GO_TO_HOME_POSTURE:
+            log.info() << "GO_TO_HOME_POSTURE";
+            goToHome();
+            reply->clear();
+            reply->addInt(1); // Change this to check check that the control mode was set.
+            break;
+
+    }
+
+
+    // // Check if new gains have come in or if the user wants the current gains
+    // // Bottle *gainsMessage = gainsBufPort_in.read(false);
+    // if (gainsMessage!=NULL) {
+    //     log.info() << " Received gains message.";
+    //     resizeDataVectors();
+    //     parseIncomingPid(gainsMessage);
+    //     bottlePid();
+    // }
+    //
+    // // Check if the user wants to go to Home Pose
+    // // Bottle *goToHomeMessage = goToHomeBufPort_in.read(false);
+    // if (goToHomeMessage!=NULL) {
+    //     log.info() << " Received go to home message.";
+    //     if(goToHomeMessage->get(0).asInt()==1){
+    //         // setCommandToHome();
+    //         goToHome();
+    //     }
+    // }
+
+    // // Bottle *robotPartAndJointMessage = robotPartAndJointBufPort_in.read(false);
+    // if (robotPartAndJointMessage!=NULL) {
+    //     log.info() << " Received part and joint index message.";
+    //     partIndex = robotPartAndJointMessage->get(0).asInt();
+    //     jointIndex = robotPartAndJointMessage->get(1).asInt();
+    //     updatePidInformation();
+    // }
+    //
+    // // Bottle *controlModeMessage = controlModeBufPort_in.read(false);
+    // if (controlModeMessage!=NULL) {
+    //     log.info() << " Received control mode message.";
+    //     parseIncomingControlMode(controlModeMessage);
+    //     updatePidInformation();
+    // }
+    //
+    // // Bottle *signalPropertiesMessage = signalPropertiesBufPort_in.read(false);
+    // if (signalPropertiesMessage!=NULL) {
+    //     log.info() << " Received signal properties message.";
+    //     parseIncomingSignalProperties(signalPropertiesMessage);
+    // }
 }
