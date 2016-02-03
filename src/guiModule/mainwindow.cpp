@@ -302,6 +302,7 @@ void MainWindow::on_gainTestButton_clicked()
         //Time::delay(0.5);
     }
     size_t vecLength = y_Time.size();
+    if(!vecLength) return;
     // std::cout << "\n\n--------\nData received. Parsing "<< dataFromController.size()<<" items..." << std::endl;
     // int vecLength = dataFromController.get(0).asInt();
 
