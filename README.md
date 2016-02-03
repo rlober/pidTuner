@@ -8,7 +8,11 @@ This tool consists of 2 separate modules, `pidTunerController` and `pidTunerGui`
 
 The GUI module automatically connects to the Control module and allows the user to manually adjust the PID gains, control mode, excitation signal properties, robot part and joint etc. **Launch this module SECOND**. It will wait for the controller ports in any case so if you launch them out of order the universe will not implode.
 
-###Status
+##Authors
+ - [Ryan Lober](https://github.com/rlober)
+ - [Antoine Hoarau](https://github.com/ahoarau)
+
+##Status
 Currently the `pidTuner` has only been tested in simulation and some components remain to be implemented/fixed:
 
 - control modes:
@@ -31,7 +35,7 @@ As it is tested on more platforms we will list them here but tentatively...
     - [ ] icubParis01
     - [ ] icubParis02
 
-####Note on the simulators
+###Note on the simulators
 As of now the Pid interfaces with the icub simulators have not been implemented (velocity in gazebo has been I think but it is giving me problems). These may be implemented at least in gazebo to some degree but for now we have to test on the real robot before debugging some of the pid functions.
 
 
@@ -76,18 +80,3 @@ Now in the build directory, `pidTuner/build/`
 ```
 
 Enjoy!
-
-
-##Updating the GUI
-If you decide to make changes to the Qt form `mainwindow.ui` you will have to regenerate its header file. I am not sure why CMake doesn't handle this step
-
-from `pidTuner/build/`...
-```
-uic ../include/guiModule/mainwindow.ui -o ../include/guiModule/ui_mainwindow.h
-```
-Now `cmake` and compile...
-```
-cmake ..
-make
-```
-I am still not sure if the `cmake ..` step is necessary but you can try and let me know.
