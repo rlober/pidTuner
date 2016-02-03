@@ -333,6 +333,7 @@ bool CtrlThread::openInterfaces()
 
 
     }
+    jointPositionVectors = homeVectors;
     return true;
 }
 
@@ -465,7 +466,7 @@ void CtrlThread::parseIncomingPid(Bottle *newGainMessage)
                 if (!iPids[partIndex]->setPid(jointIndex, newPid)) {
                     log.error()<<"Position PID send failed...";
                 }
-                while(!iEnc[partIndex]->getEncoder(jointIndex, &homeVectors[partIndex][jointIndex] ))
+                while(!iEnc[partIndex]->getEncoder(jointIndex, &jointPositionVectors[partIndex][jointIndex] ))
                 {
                     Time::delay(0.001);
                 }
@@ -718,7 +719,7 @@ bool CtrlThread::excitationSignal(double &cmd)
         {
             switch (testControlMode) {
                 case POSITION_MODE:
-                    cmd = homeVectors[partIndex][jointIndex];
+                    cmd = jointPositionVectors[partIndex][jointIndex];
                     break;
                 case VELOCITY_MODE:
                     cmd = 0.0;
@@ -733,7 +734,7 @@ bool CtrlThread::excitationSignal(double &cmd)
         {
             switch (testControlMode) {
                 case POSITION_MODE:
-                    cmd = homeVectors[partIndex][jointIndex] + signalAmplitude;
+                    cmd = jointPositionVectors[partIndex][jointIndex] + signalAmplitude;
                     break;
                 case VELOCITY_MODE:
                     cmd = signalAmplitude;
@@ -748,7 +749,7 @@ bool CtrlThread::excitationSignal(double &cmd)
         {
             switch (testControlMode) {
                 case POSITION_MODE:
-                    cmd = homeVectors[partIndex][jointIndex];
+                    cmd = jointPositionVectors[partIndex][jointIndex];
                     break;
                 case VELOCITY_MODE:
                     cmd = 0.0;

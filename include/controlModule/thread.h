@@ -91,6 +91,7 @@ class CtrlThread: public RateThread
         std::vector<Vector>     command;
         std::vector<Vector>     tmp;
         std::vector<Vector>     homeVectors;
+        std::vector<Vector>     jointPositionVectors;
         std::vector<Vector>     jointLimitsLower;
         std::vector<Vector>     jointLimitsUpper;
 
