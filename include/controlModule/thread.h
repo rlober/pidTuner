@@ -35,45 +35,28 @@
 // #include <yarp/os/BufferedPort.h>
 // #include <yarp/os/Port.h>
 #include <yarp/os/all.h>
-
-
-#include <yarp/os/RateThread.h>
-#include <yarp/os/Time.h>
 #include <yarp/sig/Vector.h>
-#include <yarp/sig/all.h>
 #include <yarp/math/Math.h>
 
 
 #include <yarp/dev/Drivers.h>
 #include <yarp/dev/PolyDriver.h>
+#include <yarp/dev/ControlBoardInterfaces.h>
+#include <yarp/dev/ControlBoardPid.h>
+#include <yarp/dev/IVelocityControl2.h>
+#include <yarp/dev/ITorqueControl.h>
+#include <yarp/dev/IControlMode2.h>
+#include <yarp/logger/YarpLogger.h>
 
-
+#include <cmath>
+#include <iostream>
 #include <gsl/gsl_math.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <fstream>
 #include <time.h>
 #include <sstream>
 #include <boost/filesystem.hpp>
-
-#include <yarp/dev/ControlBoardInterfaces.h>
-#include <yarp/dev/ControlBoardPid.h>
-#include <yarp/dev/IVelocityControl2.h>
-#include <yarp/dev/ITorqueControl.h>
-#include <yarp/dev/IControlMode2.h>
-
-#include <math.h>
-#include <yarp/logger/YarpLogger.h>
-
-#include "ui_mainwindow.h"
-
-#include <yarp/sig/Vector.h>
-#include <yarp/math/Math.h>
-
-#include <cmath>
-#include <iostream>
-
 #include <boost/chrono.hpp>
 #include <boost/thread.hpp>
 
@@ -101,7 +84,7 @@ class CtrlThread: public RateThread
         std::vector<IControlLimits*>        iLims;
         std::vector<IPidControl*>           iPids;
         std::vector<IControlMode2*>         iCtrl;
-    
+
 
 
         std::vector<Vector>     encoders;
