@@ -103,6 +103,7 @@ bool CtrlThread::threadInit()
     // robotDevice.resize(numRobotParts);
     iEnc.resize(numRobotParts);
     iPos.resize(numRobotParts);
+    iPosDirect.resize(numRobotParts);
     iVel.resize(numRobotParts);
     iTrq.resize(numRobotParts);
     iLims.resize(numRobotParts);
@@ -253,6 +254,8 @@ bool CtrlThread::openInterfaces()
         log.info() << " \nViewing Devices:";
         ok = robotDevice[rp]->view(iPos[rp]);
         log.info() << " iPos created";
+        ok = robotDevice[rp]->view(iPosDirect[rp]);
+        log.info() << " iPosDirect created";
         ok = ok && robotDevice[rp]->view(iEnc[rp]);
         log.info() << " iEnc created";
         ok = ok && robotDevice[rp]->view(iVel[rp]);
@@ -277,6 +280,7 @@ bool CtrlThread::openInterfaces()
 
         nJoints[rp]=0;
         iPos[rp]->getAxes(&nJoints[rp]);
+        iPosDirect[rp]->getAxes(&nJoints[rp]);
 
 
         encoders[rp].resize(nJoints[rp]);
@@ -367,7 +371,7 @@ bool CtrlThread::sendJointCommand(double cmd)
     bool retVal = false;
     switch (testControlMode) {
         case POSITION_MODE:
-            iPos[partIndex]->positionMove(jointIndex, cmd);
+            iPosDirect[partIndex]->setPosition(jointIndex, cmd);
             retVal = true;
             break;
         case VELOCITY_MODE:
@@ -489,9 +493,6 @@ void CtrlThread::parseIncomingPid(Bottle *newGainMessage)
         }
 
     }
-
-        //Get those gains from the device to make sure they set properly
-
     updatePidInformation();
     triggerTime = Time::now();
     applyExcitationSignal = true;

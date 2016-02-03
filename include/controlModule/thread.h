@@ -95,12 +95,13 @@ class CtrlThread: public RateThread
         std::vector<PolyDriver*>            robotDevice;
         std::vector<IEncoders*>             iEnc;
         std::vector<IPositionControl*>      iPos;
+        std::vector<IPositionDirect*>       iPosDirect;
         std::vector<IVelocityControl2*>     iVel;
         std::vector<ITorqueControl*>        iTrq;
         std::vector<IControlLimits*>        iLims;
         std::vector<IPidControl*>           iPids;
         std::vector<IControlMode2*>         iCtrl;
-
+    
 
 
         std::vector<Vector>     encoders;
