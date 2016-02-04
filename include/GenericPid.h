@@ -31,10 +31,44 @@
 class GenericPid{
 
 public:
+    //Constructor
+    GenericPid():
+        controlMode(POSITION_MODE),
+        usingJTC(false)
+    {
+        clearPidValues();
+    }
+
+    //Copy Constructor
+    GenericPid(const GenericPid& source)
+    {
+        copyPidData(source);
+    }
+
+    // assignment operator
+    GenericPid& operator = (const GenericPid& source)
+    {
+        copyPidData(source);
+        return *this;
+    }
+
+    void copyPidData(const GenericPid& source)
+    {
+        Kp = source.Kp; Kd = source.Kd; Ki = source.Ki; Kff = source.Kff; max_int = source.max_int; scale = source.scale; max_output = source.max_output; offset = source.offset; stiction_up = source.stiction_up; stiction_down = source.stiction_down; bemf = source.bemf; coulombVelThresh = source.coulombVelThresh; frictionCompensation = source.frictionCompensation; bemf_scale = source.bemf_scale; ktau = source.ktau; ktau_scale = source.ktau_scale;
+
+        controlMode = source.controlMode;
+        usingJTC = source.usingJTC;
+    }
 
     void clearPidValues()
     {
         Kp = Kd = Ki = Kff = max_int = scale = max_output = offset = stiction_up = stiction_down = bemf = coulombVelThresh = frictionCompensation = bemf_scale = ktau = ktau_scale = 0.0;
+    }
+
+    void setControlMode(const ControlMode& newCtMode, bool isUsingJtc=false)
+    {
+        controlMode = newCtMode;
+        usingJTC = isUsingJtc;
     }
 
     void putInBottle(yarp::os::Bottle& bottle)
