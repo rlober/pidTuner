@@ -86,29 +86,25 @@ bool MainWindow::init(ResourceFinder& rf)
     }
     initFinished = false;
 
-    std::cout << "Setting up Qt Ui" << std::endl;
+    log.info() << "Setting up Qt Ui.";
     ui->setupUi(this);
-    std::cout << "Ui setup." << std::endl;
 
-
-
-
-    std::cout << "Setting signal properties to default values...";
+    log.info() << "Setting signal properties to default values.";
     setSignalPropertiesToDefaults();
 
-    std::cout << "initializing GUI...";
+    log.info() << "Initializing GUI.";
     initializeGui();
 
-    std::cout << "Getting PID Gains...";
+    log.info() << "Getting PID Gains.";
     getPidValues();
 
-    std::cout << "Creating data logs...";
+    log.info() << "Creating data logs.";
     createDataLogs();
 
 
     initFinished = true;
 
-    std::cout << "\n-----------\nGui initialization finished!\n-----------"<< std::endl;
+    log.info() << "Initialization finished!";
     return true;
 }
 
@@ -130,44 +126,16 @@ bool MainWindow::initialize(ResourceFinder& rf)
     }
 
 
-
-
-
-    ///////////////////////////////////
-    // gainsBufPort_out.open("/pidTunerGui/gains/out");
-    // gainsPort_in.open("/pidTunerGui/gains/in");
-    //
-    // goToHomeBufPort_out.open("/pidTunerGui/goToHome/out");
-    //
-    // robotPartAndJointBufPort_out.open("/pidTunerGui/partAndJointIndexes/out");
-    //
-    // controlModeBufPort_out.open("/pidTunerGui/controlMode/out");
-
     dataPort_in.open("/pidTunerGui/data:i");
     rpcClientPort.open("/pidTunerGui/rpc:c");
 
-    // signalPropertiesBufPort_out.open("/pidTunerGui/signalProperties/out");
 
-    ///////////////////////////////////
-
-    std::cout << "\nConnecting Ports\n" << std::endl;
-
-    // while(!yarp.connect("/pidTunerGui/gains/out", "/pidTunerController/gains/in") ){Time::delay(0.1);}
-    // while(!yarp.connect("/pidTunerController/gains/out", "/pidTunerGui/gains/in") ){Time::delay(0.1);}
-    //
-    // while(!yarp.connect("/pidTunerGui/goToHome/out", "/pidTunerController/goToHome/in") ){Time::delay(0.1);}
-    //
-    // while(!yarp.connect("/pidTunerGui/partAndJointIndexes/out", "/pidTunerController/partAndJointIndexes/in") ){Time::delay(0.1);}
-    //
-    // while(!yarp.connect("/pidTunerGui/controlMode/out", "/pidTunerController/controlMode/in") ){Time::delay(0.1);}
+    log.info() << "Connecting ports.";
 
     while(!yarp.connect("/pidTunerController/data:o", "/pidTunerGui/data:i") ){Time::delay(0.1);}
     while(!yarp.connect("/pidTunerGui/rpc:c", "/pidTunerController/rpc:s") ){Time::delay(0.1);}
-    //
-    // while(!yarp.connect("/pidTunerGui/signalProperties/out", "/pidTunerController/signalProperties/in") ){Time::delay(0.1);}
 
-
-    std::cout << "\nPorts connected.\n" << std::endl;
+    log.info() << "Ports connected.";
     return true;
 }
 
@@ -271,15 +239,9 @@ void MainWindow::on_gainTestButton_clicked()
     Bottle dataFromController;
     yarp::sig::Vector y_Time, y_Input, y_Response;
 
-    /*int bufferLength = 1000;
-    y_Time.resize(bufferLength);
-    y_Input.resize(bufferLength);
-    y_Response.resize(bufferLength);*/
-
-
     while(1)
     {
-        std::cout << " Getting data "<<y_Time.size()<<std::endl;;
+        log.info() << " Getting data "<<y_Time.size();
         if(dataPort_in.read(dataFromController))
         {
             if(dataFromController.get(0).asInt())
@@ -292,42 +254,16 @@ void MainWindow::on_gainTestButton_clicked()
 
         }
 
-        //Time::delay(0.5);
     }
     size_t vecLength = y_Time.size();
     if(!vecLength) return;
-    // std::cout << "\n\n--------\nData received. Parsing "<< dataFromController.size()<<" items..." << std::endl;
-    // int vecLength = dataFromController.get(0).asInt();
-
-    /*y_Time.resize(vecLength);
-    y_Input.resize(vecLength);
-    y_Response.resize(vecLength);*/
-
-
-
-    std::cout << "\nData length = " << vecLength << std::endl;
-    // dataFromController.get(1).asList()->write(y_Time);
-    // dataFromController.get(2).asList()->write(y_Input);
-    // dataFromController.get(3).asList()->write(y_Response);
-
-
-
-    // std::cout << "received data_time: \n" << y_Time.toString().c_str() << std::endl;
-    // std::cout << "received data_input: \n" << y_Input.toString().c_str() << std::endl;
-    // std::cout << "received data_response: \n" << y_Response.toString().c_str() << std::endl;
 
 
 
 
-    std::cout << "Time size: "<< y_Time.size() << " Input size: "<< y_Input.size() <<" Response size: "<< y_Response.size() << std::endl;
+    log.info() << "\nData length = " << vecLength;
 
-
-
-
-
-
-
-    std::cout << "\nConverting data from Yarp to Qt vectors" << std::endl;
+    log.info() << "Time size: "<< y_Time.size() << " Input size: "<< y_Input.size() <<" Response size: "<< y_Response.size();
 
     QVector<double> q_Time(vecLength), q_Input(vecLength), q_Response(vecLength); // initialize with entries 0..100
     for (int i=0; i<vecLength; i++)
@@ -354,8 +290,6 @@ void MainWindow::on_gainTestButton_clicked()
     ui->posPlot->graph(1)->setData(q_Time, q_Response);
     resetYLabel();
     ui->posPlot->replot();
-
-    std::cout << "\nData plotted." << std::endl;
 
     gainsHaveBeenChanged = true;
 
@@ -465,7 +399,7 @@ void MainWindow::on_jointList_currentIndexChanged(int jointId)
         setCurrentPartAndJoint();
         plotTitle->setText(ui->jointList->currentText());
         ui->posPlot->replot();
-        std::cout << "Joint Index has been changed." << std::endl;
+        log.info() << "Joint Index has been changed.";
     }
 
 }
@@ -787,24 +721,13 @@ bool MainWindow::discardChanges()
 void MainWindow::saveGains()
 {
     writeDataToLogs();
-    qDebug()<<"saved";
+    log.info() << "Logs saved!";
     gainsHaveBeenChanged=false;
 }
 
 
 bool MainWindow::getPidValues()
 {
-    // Bottle& gainsBottle_out = gainsBufPort_out.prepare(); // Get a place to store things.
-    // gainsBottle_out.clear();
-    // gainsBottle_out.addInt(0); // tells the receiver to just send the current gains
-    // gainsBufPort_out.write();
-    //
-    // Bottle controllerResponse;
-    // while(!gainsPort_in.read(controllerResponse))
-    // {
-    //     Time::delay(0.001);
-    // }
-
     Bottle send, reply;
     send.addInt(GET_PID_VALUES);
     rpcClientPort.write(send,reply);
@@ -881,12 +804,6 @@ bool MainWindow::unBottlePid(Bottle& bottle)
 
 bool MainWindow::setPidValues()
 {
-    // kpBufPort_out
-
-    // Bottle& gainsBottle_out = gainsBufPort_out.prepare(); // Get a place to store things.
-    //
-    // gainsBufPort_out.write();
-
     Bottle send, reply;
     send.addInt(SET_PID_VALUES);
     bottlePid(send);
@@ -905,13 +822,7 @@ bool MainWindow::setPidValues()
 
 void MainWindow::sendPartAndJointIndexes()
 {
-    std::cout << "Sending part and joint indexes: "<< partIndex << " & " << jointIndex << std::endl;
-
-    // Bottle& partAndJointIndexesBottle_out = robotPartAndJointBufPort_out.prepare(); // Get a place to store things.
-    // partAndJointIndexesBottle_out.clear();
-    // partAndJointIndexesBottle_out.addInt(partIndex);
-    // partAndJointIndexesBottle_out.addInt(jointIndex);
-    // robotPartAndJointBufPort_out.write();
+    log.info() << "Sending part and joint indexes: "<< partIndex << " & " << jointIndex;
 
     Bottle send, reply;
     send.addInt(SET_PART_AND_JOINT_INDEXES);
@@ -919,9 +830,7 @@ void MainWindow::sendPartAndJointIndexes()
     send.addInt(jointIndex);
     rpcClientPort.write(send,reply);
     if(reply.get(0).asInt()){
-        std::cout << "Getting PID gains..." << std::endl;
         getPidValues();
-        std::cout << "done." << std::endl;
     }else{
         log.error() << "Could not set part and joint index.";
     }
@@ -943,11 +852,6 @@ void MainWindow::sendControlMode()
     }else{
         log.error() << "Could not set control mode.";
     }
-    // Bottle& controlModeBottle_out = controlModeBufPort_out.prepare(); // Get a place to store things.
-    // controlModeBottle_out.clear();
-    // controlModeBottle_out.addInt(controlMode);
-    // controlModeBufPort_out.write();
-
 }
 
 
@@ -986,7 +890,7 @@ void MainWindow::createDataLogs()
 	bool loadOkay = pidGainsLog.LoadFile(logFilePath.c_str());
 	if (!loadOkay)
 	{
-        std::cout << "Generating a new PID log file." << std::endl;
+        log.info() << "Generating a new PID log file.";
         TiXmlDeclaration* decl = new TiXmlDeclaration( "1.0", "", "" );
         pidGainsLog.LinkEndChild( decl );
 
@@ -996,7 +900,7 @@ void MainWindow::createDataLogs()
     }
     else
     {
-        std::cout << "Modifying: " + logFilePath << std::endl;
+        log.info() << "Modifying: " + logFilePath;
         for ( TiXmlNode* pChild = pidGainsLog.FirstChild(); pChild != 0; pChild = pChild->NextSibling())
     	{
             int TINYXML_COMMENT = 2;
@@ -1086,7 +990,7 @@ void MainWindow::writeDataToLogs()
 
     }
     else{
-        std::cout << "Couldn't find any existing log file... Ohhhhhhhhhhhhhhhhhhhhhhhh Shit!!!!! It hurts!! KILL ME!!!!" << std::endl;
+        log.error() << "Couldn't find any existing log file... Ohhhhhhhhhhhhhhhhhhhhhhhh Shit!!!!! It hurts!! KILL ME!!!!";
     }
 
 }
@@ -1217,14 +1121,7 @@ void MainWindow::on_resetSignalPropButton_clicked()
 
 void MainWindow::sendExcitationSignalProperties()
 {
-    // Bottle& sigPropsBottle_out = signalPropertiesBufPort_out.prepare(); // Get a place to store things.
-    // sigPropsBottle_out.clear();
-    // sigPropsBottle_out.addInt(ui->signalTypeComboBox->currentIndex()); // tells the receiver that new gains are comming and should be set
-    // sigPropsBottle_out.addDouble(signalAmplitude);
-    // sigPropsBottle_out.addDouble(signalStartTime);
-    // sigPropsBottle_out.addDouble(signalDuration);
-    // signalPropertiesBufPort_out.write();
-
+    //TODO: get signal type from the signal type combo box.
     testSignalType = STEP;
     Bottle send, reply;
     send.addInt(SET_SIGNAL_PROPERTIES);
@@ -1292,18 +1189,13 @@ void MainWindow::updateSignalPropertiesInGui()
 
 void MainWindow::on_savePlotButton_clicked()
 {
-
-    // std::string filePath = "test.png";
-    // QString qFilePath = QString::fromStdString(filePath);
-    // qDebug()<<qFilePath;
-    // ui->posPlot->savePng(qFilePath);
     std::string appendNotes = "_"+controlMode_string+".png";
     QString qFilePath(ui->jointList->currentText().append(QString::fromStdString(appendNotes)));
     if(ui->posPlot->savePng(qFilePath) )
     {
-        std::cout << "File saved to "+ qFilePath.toStdString() << std::endl;
+        log.info() << "File saved to "+ qFilePath.toStdString();
     }
     else{
-        std::cout << "[ERROR] Failed to save file. Check filepath:\n"+qFilePath.toStdString() << std::endl;
+        log.error() << "Failed to save file. Check filepath: \n" << qFilePath.toStdString();
     }
 }
