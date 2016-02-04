@@ -598,7 +598,7 @@
              <item>
               <layout class="QHBoxLayout" name="jtcLayout">
                <item>
-                <widget class="QLabel" name="jtc_header">
+                <widget class="QLabel" name="torque_header">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
                    <horstretch>0</horstretch>

@@ -127,6 +127,8 @@ private:
     void updateSignalPropertiesInGui();
     void setSignalPropertiesToDefaults();
     double getValueFromUserInput(QLineEdit* userInputBox);
+    void disableTorqueParamInputs();
+    void enableTorqueParamInputs();
 
 
 

@@ -465,6 +465,25 @@ void MainWindow::on_nextJointButton_clicked()
     }
 }
 
+void MainWindow::disableTorqueParamInputs()
+{
+    ui->bemf_in->setEnabled(false);
+    ui->bemf_scale_in->setEnabled(false);
+    ui->coulombVelThresh_in->setEnabled(false);
+    ui->frictionCompensation_in->setEnabled(false);
+    ui->ktau_in->setEnabled(false);
+    ui->ktau_scale_in->setEnabled(false);
+}
+
+void MainWindow::enableTorqueParamInputs()
+{
+    ui->bemf_in->setEnabled(true);
+    ui->bemf_scale_in->setEnabled(true);
+    ui->coulombVelThresh_in->setEnabled(true);
+    ui->frictionCompensation_in->setEnabled(true);
+    ui->ktau_in->setEnabled(true);
+    ui->ktau_scale_in->setEnabled(true);
+}
 
 void MainWindow::on_posContButton_clicked(bool checked)
 {
@@ -483,7 +502,7 @@ void MainWindow::on_posContButton_clicked(bool checked)
             signalDuration = signalDuration_POS;
             updateSignalPropertiesInGui();
             sendExcitationSignalProperties();
-
+            disableTorqueParamInputs();
         }
     }
     else{
@@ -508,6 +527,7 @@ void MainWindow::on_velContButton_clicked(bool checked)
             signalDuration = signalDuration_VEL;
             updateSignalPropertiesInGui();
             sendExcitationSignalProperties();
+            disableTorqueParamInputs();
         }
     }
     else{
@@ -531,6 +551,17 @@ void MainWindow::on_torContButton_clicked(bool checked)
             signalDuration = signalDuration_TOR;
             updateSignalPropertiesInGui();
             sendExcitationSignalProperties();
+            enableTorqueParamInputs();
+            if (usingJTC) {
+                ui->torque_header->setText("Torque (JTC)");
+                ui->bemf_scale_in->setEnabled(false);
+                ui->ktau_in->setEnabled(false);
+                ui->ktau_scale_in->setEnabled(false);
+            }else{
+                ui->torque_header->setText("Torque");
+                ui->coulombVelThresh_in->setEnabled(false);
+                ui->frictionCompensation_in->setEnabled(false);
+            }
         }
     }
     else{
