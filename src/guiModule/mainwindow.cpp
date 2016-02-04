@@ -31,10 +31,6 @@
 
 #include "guiModule/mainwindow.h"
 #include "ui_mainwindow.h"
-//
-// static const int POSITION_MODE = 0;
-// static const int VELOCITY_MODE = 1;
-// static const int TORQUE_MODE = 2;
 
 
 using namespace yarp::os;
@@ -146,6 +142,7 @@ void MainWindow::setCurrentPartAndJoint()
     sendPartAndJointIndexes();
 
     getPidValues();
+    originalPid = newPid;
 }
 
 void MainWindow::initializeGui()
@@ -238,10 +235,9 @@ void MainWindow::on_gainTestButton_clicked()
 
     Bottle dataFromController;
     yarp::sig::Vector y_Time, y_Input, y_Response;
-
+    log.info() << "Awaiting test data.";
     while(1)
     {
-        log.info() << " Getting data "<<y_Time.size();
         if(dataPort_in.read(dataFromController))
         {
             if(dataFromController.get(0).asInt())
@@ -258,12 +254,7 @@ void MainWindow::on_gainTestButton_clicked()
     size_t vecLength = y_Time.size();
     if(!vecLength) return;
 
-
-
-
-    log.info() << "\nData length = " << vecLength;
-
-    log.info() << "Time size: "<< y_Time.size() << " Input size: "<< y_Input.size() <<" Response size: "<< y_Response.size();
+    log.info() << "Received" << vecLength << "data points.";
 
     QVector<double> q_Time(vecLength), q_Input(vecLength), q_Response(vecLength); // initialize with entries 0..100
     for (int i=0; i<vecLength; i++)
@@ -416,11 +407,6 @@ void MainWindow::on_closeButton_clicked()
 
 void MainWindow::on_homeButton_clicked()
 {
-    // Bottle& goToHomeBottle_out = goToHomeBufPort_out.prepare();
-    // goToHomeBottle_out.clear();
-    // goToHomeBottle_out.addInt(1); // tells the receiver to go to home config
-    // goToHomeBufPort_out.write();
-
     Bottle send, reply;
     send.addInt(GO_TO_HOME_POSTURE);
     rpcClientPort.write(send,reply);
@@ -575,67 +561,67 @@ double MainWindow::getValueFromUserInput(QLineEdit* userInputBox)
 
 void MainWindow::on_kp_in_editingFinished()
 {
-    Kp_new = getValueFromUserInput(ui->kp_in);
+    newPid.Kp = getValueFromUserInput(ui->kp_in);
 }
 
 void MainWindow::on_kd_in_editingFinished()
 {
-    Kd_new = getValueFromUserInput(ui->kd_in);
+    newPid.Kd = getValueFromUserInput(ui->kd_in);
 }
 
 void MainWindow::on_ki_in_editingFinished()
 {
-    Ki_new = getValueFromUserInput(ui->ki_in);
+    newPid.Ki = getValueFromUserInput(ui->ki_in);
 }
 
 void MainWindow::on_kff_in_editingFinished()
 {
-    Kff_new = getValueFromUserInput(ui->kff_in);
+    newPid.Kff = getValueFromUserInput(ui->kff_in);
 }
 
 void MainWindow::on_max_int_in_editingFinished()
 {
-    max_int_new = getValueFromUserInput(ui->max_int_in);
+    newPid.max_int = getValueFromUserInput(ui->max_int_in);
 }
 
 void MainWindow::on_scale_in_editingFinished()
 {
-    scale_new = getValueFromUserInput(ui->scale_in);
+    newPid.scale = getValueFromUserInput(ui->scale_in);
 }
 
 void MainWindow::on_max_output_in_editingFinished()
 {
-    max_output_new = getValueFromUserInput(ui->max_output_in);
+    newPid.max_output = getValueFromUserInput(ui->max_output_in);
 }
 
 void MainWindow::on_offset_in_editingFinished()
 {
-    offset_new = getValueFromUserInput(ui->offset_in);
+    newPid.offset = getValueFromUserInput(ui->offset_in);
 }
 
 void MainWindow::on_stiction_up_in_editingFinished()
 {
-    stiction_up_new = getValueFromUserInput(ui->stiction_up_in);
+    newPid.stiction_up = getValueFromUserInput(ui->stiction_up_in);
 }
 
 void MainWindow::on_stiction_down_in_editingFinished()
 {
-    stiction_down_new = getValueFromUserInput(ui->stiction_down_in);
+    newPid.stiction_down = getValueFromUserInput(ui->stiction_down_in);
 }
 
 void MainWindow::on_bemf_in_editingFinished()
 {
-    bemf_new = getValueFromUserInput(ui->bemf_in);
+    newPid.bemf = getValueFromUserInput(ui->bemf_in);
 }
 
 void MainWindow::on_coulombVelThresh_in_editingFinished()
 {
-    coulombVelThresh_new = getValueFromUserInput(ui->coulombVelThresh_in);
+    newPid.coulombVelThresh = getValueFromUserInput(ui->coulombVelThresh_in);
 }
 
 void MainWindow::on_frictionCompensation_in_editingFinished()
 {
-    frictionCompensation_new = getValueFromUserInput(ui->frictionCompensation_in);
+    newPid.frictionCompensation = getValueFromUserInput(ui->frictionCompensation_in);
 }
 
 void MainWindow::on_saveGainsButton_clicked()
@@ -646,42 +632,34 @@ void MainWindow::on_saveGainsButton_clicked()
 
 void MainWindow::on_gainResetButton_clicked()
 {
-    Kp_new = Kp_old;
-    Kd_new = Kd_old;
-    Ki_new = Ki_old;
-    Kff_new = Kff_old;
-    max_int_new = max_int_old;
-    scale_new = scale_old;
-    max_output_new = max_output_old;
-    offset_new = offset_old;
-    stiction_up_new = stiction_up_old;
-    stiction_down_new = stiction_down_old;
-    if(usingJTC){
-        bemf_new = bemf_old;
-        coulombVelThresh_new = coulombVelThresh_old;
-        frictionCompensation_new = frictionCompensation_old;
-    }
+    newPid = originalPid;
+
     refreshGainDisplays();
 
 }
 
 void MainWindow::refreshGainDisplays()
 {
-    ui->kp_in->setText(QString::number(Kp_new));
-    ui->kd_in->setText(QString::number(Kd_new));
-    ui->ki_in->setText(QString::number(Ki_new));
-    ui->kff_in->setText(QString::number(Kff_new));
-    ui->max_int_in->setText(QString::number(max_int_new));
-    ui->scale_in->setText(QString::number(scale_new));
-    ui->max_output_in->setText(QString::number(max_output_new));
-    ui->offset_in->setText(QString::number(offset_new));
-    ui->stiction_up_in->setText(QString::number(stiction_up_new));
-    ui->stiction_down_in->setText(QString::number(stiction_down_new));
-    if(usingJTC)
-    {
-        ui->bemf_in->setText(QString::number(bemf_new));
-        ui->coulombVelThresh_in->setText(QString::number(coulombVelThresh_new));
-        ui->frictionCompensation_in->setText(QString::number(frictionCompensation_new));
+    ui->kp_in->setText(QString::number(newPid.Kp));
+    ui->kd_in->setText(QString::number(newPid.Kd));
+    ui->ki_in->setText(QString::number(newPid.Ki));
+    ui->kff_in->setText(QString::number(newPid.Kff));
+    ui->max_int_in->setText(QString::number(newPid.max_int));
+    ui->scale_in->setText(QString::number(newPid.scale));
+    ui->max_output_in->setText(QString::number(newPid.max_output));
+    ui->offset_in->setText(QString::number(newPid.offset));
+    ui->stiction_up_in->setText(QString::number(newPid.stiction_up));
+    ui->stiction_down_in->setText(QString::number(newPid.stiction_down));
+    if(testControlMode == TORQUE_MODE){
+        ui->bemf_in->setText(QString::number(newPid.bemf));
+        if(usingJTC){
+            ui->coulombVelThresh_in->setText(QString::number(newPid.coulombVelThresh));
+            ui->frictionCompensation_in->setText(QString::number(newPid.frictionCompensation));
+        }else{
+            ui->bemf_scale_in->setText(QString::number(newPid.bemf_scale));
+            ui->ktau_in->setText(QString::number(newPid.Ktau));
+            ui->ktau_scale_in->setText(QString::number(newPid.Ktau_scale));
+        }
     }
 }
 
@@ -728,10 +706,11 @@ void MainWindow::saveGains()
 
 bool MainWindow::getPidValues()
 {
+    newPid.setControlMode(testControlMode, usingJTC);
     Bottle send, reply;
     send.addInt(GET_PID_VALUES);
     rpcClientPort.write(send,reply);
-    if(unBottlePid(reply)){
+    if(newPid.extractFromBottle(reply)){
         refreshGainDisplays();
         return true;
     }else{
@@ -741,74 +720,14 @@ bool MainWindow::getPidValues()
 
 }
 
-void MainWindow::bottlePid(Bottle& bottle)
-{
-    bottle.addDouble(Kp_new);
-    bottle.addDouble(Kd_new);
-    bottle.addDouble(Ki_new);
-    bottle.addDouble(Kff_new);
-    bottle.addDouble(max_int_new);
-    bottle.addDouble(scale_new);
-    bottle.addDouble(max_output_new);
-    bottle.addDouble(offset_new);
-    bottle.addDouble(stiction_up_new);
-    bottle.addDouble(stiction_down_new);
-    if(usingJTC){
-        bottle.addDouble(bemf_new);
-        bottle.addDouble(coulombVelThresh_new);
-        bottle.addDouble(frictionCompensation_new);
-    }
-}
-
-
-bool MainWindow::unBottlePid(Bottle& bottle)
-{
-    if(bottle.size()>1)
-    {
-        Kp_old                      = bottle.get(0).asDouble();
-        Kd_old                      = bottle.get(1).asDouble();
-        Ki_old                      = bottle.get(2).asDouble();
-        Kff_old                     = bottle.get(3).asDouble();
-        max_int_old                 = bottle.get(4).asDouble();
-        scale_old                   = bottle.get(5).asDouble();
-        max_output_old              = bottle.get(6).asDouble();
-        offset_old                  = bottle.get(7).asDouble();
-        stiction_up_old             = bottle.get(8).asDouble();
-        stiction_down_old           = bottle.get(9).asDouble();
-        Kp_new = Kp_old;
-        Kd_new = Kd_old;
-        Ki_new = Ki_old;
-        Kff_new = Kff_old;
-        max_int_new = max_int_old;
-        scale_new = scale_old;
-        max_output_new = max_output_old;
-        offset_new = offset_old;
-        stiction_up_new = stiction_up_old;
-        stiction_down_new = stiction_down_old;
-
-        if(usingJTC){
-            bemf_old                    = bottle.get(10).asDouble();
-            coulombVelThresh_old        = bottle.get(11).asDouble();
-            frictionCompensation_old    = bottle.get(12).asDouble();
-            bemf_new = bemf_old;
-            coulombVelThresh_new = coulombVelThresh_old;
-            frictionCompensation_new = frictionCompensation_old;
-        }
-        return true;
-    }
-    else{
-        return false;
-    }
-}
-
-
 bool MainWindow::setPidValues()
 {
+    newPid.setControlMode(testControlMode, usingJTC);
     Bottle send, reply;
     send.addInt(SET_PID_VALUES);
-    bottlePid(send);
+    newPid.putInBottle(send);
     rpcClientPort.write(send,reply);
-    if(unBottlePid(reply))
+    if(newPid.extractFromBottle(reply))
     {
         refreshGainDisplays();
         return true;
@@ -849,6 +768,7 @@ void MainWindow::sendControlMode()
     if (reply.get(0).asInt())
     {
         getPidValues();
+        originalPid = newPid;
     }else{
         log.error() << "Could not set control mode.";
     }
@@ -982,9 +902,22 @@ void MainWindow::writeDataToLogs()
             xml_mode->SetAttribute("name", controlMode_string.c_str());
         }
 
-        xml_mode->SetDoubleAttribute("Kp", Kp_new);
-        xml_mode->SetDoubleAttribute("Kd", Kd_new);
-        xml_mode->SetDoubleAttribute("Ki", Ki_new);
+        xml_mode->SetDoubleAttribute("Kp", newPid.Kp);
+        xml_mode->SetDoubleAttribute("Kd", newPid.Kd);
+        xml_mode->SetDoubleAttribute("Ki", newPid.Ki);
+        xml_mode->SetDoubleAttribute("Kff", newPid.Kff);
+        xml_mode->SetDoubleAttribute("max_int", newPid.max_int);
+        xml_mode->SetDoubleAttribute("scale", newPid.scale);
+        xml_mode->SetDoubleAttribute("max_output", newPid.max_output);
+        xml_mode->SetDoubleAttribute("offset", newPid.offset);
+        xml_mode->SetDoubleAttribute("stiction_up", newPid.stiction_up);
+        xml_mode->SetDoubleAttribute("stiction_down", newPid.stiction_down);
+        xml_mode->SetDoubleAttribute("bemf", newPid.bemf);
+        xml_mode->SetDoubleAttribute("coulombVelThresh", newPid.coulombVelThresh);
+        xml_mode->SetDoubleAttribute("frictionCompensation", newPid.frictionCompensation);
+        xml_mode->SetDoubleAttribute("bemf_scale", newPid.bemf_scale);
+        xml_mode->SetDoubleAttribute("Ktau", newPid.Ktau);
+        xml_mode->SetDoubleAttribute("Ktau_scale", newPid.Ktau_scale);
 
         pidGainsLog.SaveFile( logFilePath.c_str() );
 

@@ -36,12 +36,7 @@
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QLineEdit>
-//#include "ui_mainwindow.h"
-// #include <yarp/os/Network.h>
-// #include <yarp/os/BufferedPort.h>
-// #include <yarp/os/Port.h>
 #include <yarp/os/all.h>
-// #include <yarp/os/ResourceFinder.h>
 
 #include <boost/scoped_ptr.hpp>
 
@@ -54,16 +49,11 @@
 #include <boost/chrono.hpp>
 #include <boost/thread.hpp>
 
-//
-// #include <yarp/os/RateThread.h>
-// #include <yarp/os/Time.h>
 #include <yarp/sig/Vector.h>
-// #include <yarp/sig/all.h>
 #include <yarp/math/Math.h>
 
-// YARP_DECLARE_DEVICES(icubmod)
+#include <GenericPid.h>
 
-// using namespace yarp::os;
 
 namespace Ui {
 class MainWindow;
@@ -108,8 +98,6 @@ private slots:
 
     void on_saveGainsButton_clicked();
     void on_gainResetButton_clicked();
-    // void on_partList_highlighted(int index);
-    // void on_jointList_highlighted(int index);
 
     void on_amplitude_in_editingFinished();
     void on_duration_in_editingFinished();
@@ -139,8 +127,6 @@ private:
     void updateSignalPropertiesInGui();
     void setSignalPropertiesToDefaults();
     double getValueFromUserInput(QLineEdit* userInputBox);
-    void bottlePid(yarp::os::Bottle& bottle);
-    bool unBottlePid(yarp::os::Bottle& bottle);
 
 
 
@@ -157,33 +143,6 @@ private:
     int excludedPartIndex;
 
     bool usingJTC;
-    double  Kp_new,
-            Kd_new,
-            Ki_new,
-            Kff_new,
-            max_int_new,
-            scale_new,
-            max_output_new,
-            offset_new,
-            stiction_up_new,
-            stiction_down_new,
-            bemf_new,
-            coulombVelThresh_new,
-            frictionCompensation_new;
-
-    double  Kp_old,
-            Kd_old,
-            Ki_old,
-            Kff_old,
-            max_int_old,
-            scale_old,
-            max_output_old,
-            offset_old,
-            stiction_up_old,
-            stiction_down_old,
-            bemf_old,
-            coulombVelThresh_old,
-            frictionCompensation_old;
 
     double  signalAmplitude,
             signalAmplitude_POS,
@@ -208,23 +167,8 @@ private:
             signalDuration_VEL_DEFAULT,
             signalDuration_TOR_DEFAULT;
 
-    yarp::os::Network yarp;
-
-    // yarp::os::BufferedPort<yarp::os::Bottle> gainsBufPort_out;
-    // yarp::os::Port                           gainsPort_in;
-
-
-    // yarp::os::BufferedPort<yarp::os::Bottle> goToHomeBufPort_out;
-
-    // yarp::os::BufferedPort<yarp::os::Bottle> robotPartAndJointBufPort_out;
-
-    // yarp::os::BufferedPort<yarp::os::Bottle> controlModeBufPort_out;
-
-
-    yarp::os::Port                           dataPort_in;
-
-    // yarp::os::BufferedPort<yarp::os::Bottle> signalPropertiesBufPort_out;
-
+    yarp::os::Network   yarp;
+    yarp::os::Port      dataPort_in;
     yarp::os::RpcClient rpcClientPort;
 
     ControlMode testControlMode;
@@ -232,6 +176,9 @@ private:
 
     std::string controlMode_string;
     std::string logFilePath;
+
+    GenericPid newPid, originalPid;
+
 };
 
 #endif // MAINWINDOW_H

@@ -61,6 +61,7 @@
 #include <boost/thread.hpp>
 
 #include <MessageVocabulary.h>
+#include <GenericPid.h>
 
 
 #define DEG_TO_RAD M_PI / 180.
@@ -173,23 +174,10 @@ class CtrlThread: public RateThread
         yarp::os::Log log;
 
         bool usingJTC;
-        double  Kp_thread,
-                Kd_thread,
-                Ki_thread,
-                Kff_thread,
-                max_int_thread,
-                scale_thread,
-                max_output_thread,
-                offset_thread,
-                stiction_up_thread,
-                stiction_down_thread,
-                bemf_thread,
-                coulombVelThresh_thread,
-                frictionCompensation_thread;
 
         void bottlePid(Bottle* bottle);
         void bottleSignalProperties(Bottle* bottle);
-        void parseIncomingPid(Bottle *newGainMessage);
+        void parseIncomingPid();
         void parseIncomingControlMode(Bottle *newControlModeMessage);
         void parseIncomingSignalProperties(Bottle *newControlModeMessage);
         void updatePidInformation();
@@ -202,23 +190,14 @@ class CtrlThread: public RateThread
         void parseRpcMessage(Bottle *input, Bottle *reply);
 
 
-        // BufferedPort<Bottle>    gainsBufPort_in; // incoming new gains
-        // Port                    gainsPort_out; // outgoing current gains
-
-        // BufferedPort<Bottle>    goToHomeBufPort_in; // incoming gotToHome Command
-
-        // BufferedPort<Bottle>    robotPartAndJointBufPort_in; //incoming part and joint index
-
-        // BufferedPort<Bottle>    controlModeBufPort_in;
-
-        Port                    dataPort_out;
-
-        // BufferedPort<Bottle>    signalPropertiesBufPort_in;
+        Port dataPort_out;
         RpcPortCallback rpcCallback;
         RpcServer rpcServerPort;
 
         ControlMode testControlMode;
         SignalType  testSignalType;
+        GenericPid  threadPid;
+
 
 };
 #endif

@@ -33,10 +33,6 @@
 #include "controlModule/thread.h"
 
 
-
-
-
-
 using namespace boost;
 using namespace boost::filesystem;
 using namespace std;
@@ -76,7 +72,6 @@ bool CtrlThread::threadInit()
 {
 
     extension = ".txt";
-    //baseFilePath = "/home/ryan/Desktop/";
 
 
 
@@ -133,21 +128,12 @@ bool CtrlThread::threadInit()
 
     //Open yarp ports
     bool ok = true;
-    // ok &= gainsBufPort_in.open("/pidTunerController/gains/in");
-    // ok &= gainsPort_out.open("/pidTunerController/gains/out");
-    //
-    // ok &= goToHomeBufPort_in.open("/pidTunerController/goToHome/in");
-    //
-    // ok &= robotPartAndJointBufPort_in.open("/pidTunerController/partAndJointIndexes/in");
-    //
-    // ok &= controlModeBufPort_in.open("/pidTunerController/controlMode/in");
 
     ok &= dataPort_out.open("/pidTunerController/data:o");
     ok &= rpcServerPort.open("/pidTunerController/rpc:s");
     if(ok){
         rpcServerPort.setReader(rpcCallback);
     }
-    // ok &= signalPropertiesBufPort_in.open("/pidTunerController/signalProperties/in");
 
     return ok;
 
@@ -156,9 +142,9 @@ bool CtrlThread::threadInit()
 void CtrlThread::afterStart(bool s)
 {
     if (s)
-        log.info() << " Thread started successfully";
+        log.info() << "Thread started successfully";
     else
-        log.error() << " Thread did not start";
+        log.error() << "Thread did not start";
 }
 
 /*********************************************************
@@ -186,7 +172,7 @@ void CtrlThread::run()
             if(jointLimitsReached()){
                 finalizeDataVectors();
                 applyExcitationSignal = false;
-                log.warning() << " Joint limit has been reached. Potentially unsafe behavior has been detected so I am stopping this test!\n";
+                log.warning() << "Joint limit has been reached. Potentially unsafe behavior has been detected so I am stopping this test!\n";
             }
 
             if(dataReadyForDelivery){
@@ -211,7 +197,6 @@ void CtrlThread::threadRelease()
 {
 
 
-    log.info() << " \n\n\t<-------------------------->\n";
     while(!goToHome())
     {
         // log.info() << " Going to Home Pose\n";
@@ -311,12 +296,6 @@ bool CtrlThread::openInterfaces()
         }
 
 
-
-        // while(!iEnc[rp]->getEncoders(homeVectors[rp].data()) )
-        // {
-        //     Time::delay(0.01);
-        // }
-        //
         double timeout = 2.0; //seconds
         double delayTime = 0.01; //seconds
         double timeWaiting = 0.0; //seconds
@@ -325,7 +304,7 @@ bool CtrlThread::openInterfaces()
             Time::delay(delayTime);
             timeWaiting += delayTime;
             if (timeWaiting > timeout) {
-                log.error() << " (line "<< __LINE__<< ") Timeout while waiting for "<< curRobPart <<" encoder data. Skipping.";
+                log.error() << "(line "<< __LINE__<< ") Timeout while waiting for "<< curRobPart <<" encoder data. Skipping.";
             }
         }
 
@@ -340,7 +319,7 @@ bool CtrlThread::openInterfaces()
 
 bool CtrlThread::goToHome()
 {
-    log.info() <<" Moving to home position.\n";
+    log.info() << "Moving to home position.";
 
 
     for (int rp=0; rp<numRobotParts; rp++)
@@ -363,7 +342,7 @@ bool CtrlThread::goToHome()
         }
 
     }
-    log.info() << " Finished.";
+    log.info() << "Finished.";
     return true;
 }
 
@@ -386,72 +365,37 @@ bool CtrlThread::sendJointCommand(double cmd)
     }
     return retVal;
 
-    // if (isPositionMode)
-    // {
-    //     // iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_POSITION);
-    //     iPos[partIndex]->positionMove(jointIndex, cmd);
-    // }
-    //
-    // else if (isVelocityMode)
-    // {
-    //     /*
-    //         Using IVelocityControl2
-    //     */
-    //
-    //     // iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_VELOCITY);
-    //     iVel[partIndex]->velocityMove(1, &jointIndex, &cmd);//jointVector.data(), cmdVector.data());
-    //
-    //     /*
-    //         Another option is to use IVelocityControl and use:
-    //         iVel[partIndex]->velocityMove(jointIndex, cmd);
-    //
-    //     */
-    //
-    //
-    // }
-    //
-    // else if (isTorqueMode)
-    // {
-    //     // iCtrl[partIndex]->setControlMode(jointIndex, VOCAB_CM_TORQUE);
-    //     iTrq[partIndex]->setRefTorque(jointIndex, cmd);
-    // }
-    //
-    // else{return false;}
-
 }
 
-/*
-void CtrlThread::setCommandToHome()
-{
-    for (int rp=0; rp<numRobotParts; rp++)
-    {
-
-        for (int jnt = 0; jnt < nJoints[rp]; jnt++)
-        {
-            iCtrl[rp]->setControlMode(jnt, VOCAB_CM_POSITION);
-            command[rp][jnt] = homeVectors[rp][jnt];
-            log.info() << " Going to home configuration...";
-        }
-    }
-    jointCommandsHaveBeenUpdated = true;
-}
-*/
-
-void CtrlThread::parseIncomingPid(Bottle *newGainMessage)
+void CtrlThread::parseIncomingPid()
 {
 
     Pid newPid;
-    newPid.setKp(newGainMessage->get(1).asDouble());
-    newPid.setKd(newGainMessage->get(2).asDouble());
-    newPid.setKi(newGainMessage->get(3).asDouble());
-    newPid.setKff(newGainMessage->get(4).asDouble());
-    newPid.setMaxInt(newGainMessage->get(5).asDouble());
-    newPid.setScale(newGainMessage->get(6).asDouble());
-    newPid.setMaxOut(newGainMessage->get(7).asDouble());
-    newPid.setOffset(newGainMessage->get(8).asDouble());
-    newPid.setStictionValues(newGainMessage->get(9).asDouble(), newGainMessage->get(10).asDouble());
-    if(usingJTC){
-        //get bemf, coulombVelThresh and frictionComp.
+
+    newPid.setKp(threadPid.Kp);
+    newPid.setKd(threadPid.Kd);
+    newPid.setKi(threadPid.Ki);
+    newPid.setKff(threadPid.Kff);
+    newPid.setMaxInt(threadPid.max_int);
+    newPid.setScale(threadPid.scale);
+    newPid.setMaxOut(threadPid.max_output);
+    newPid.setOffset(threadPid.offset);
+    newPid.setStictionValues(threadPid.stiction_up, threadPid.stiction_down);
+
+    if (testControlMode == TORQUE_MODE) {
+        if(usingJTC){
+            iTrq[partIndex]->setBemfParam(jointIndex, threadPid.bemf);
+            // TODO: implement setters here.
+            threadPid.coulombVelThresh = 0.0;
+            threadPid.frictionCompensation = 0.0;
+        }else{
+            yarp::dev::MotorTorqueParameters trqParams;
+            trqParams.bemf = threadPid.bemf;
+            trqParams.bemf_scale = threadPid.bemf_scale;
+            trqParams.ktau = threadPid.Ktau;
+            trqParams.ktau_scale = threadPid.Ktau_scale;
+            iTrq[partIndex]->setMotorTorqueParams(jointIndex, trqParams);
+        }
     }
     //send new Pid to device
 
@@ -609,51 +553,36 @@ void CtrlThread::updatePidInformation()
 
     if(res)
     {
-        Kp_thread = currentPid.kp;
-        Kd_thread = currentPid.kd;
-        Ki_thread = currentPid.ki;
-        Kff_thread = currentPid.kff;
-        max_int_thread = currentPid.max_int;
-        scale_thread = currentPid.scale;
-        max_output_thread = currentPid.max_output;
-        offset_thread = currentPid.offset;
-        stiction_up_thread = currentPid.stiction_up_val;
-        stiction_down_thread = currentPid.stiction_down_val;
-        if(usingJTC){
-            // bemf_thread = currentPid.bemf;
-            // coulombVelThresh_thread = currentPid.coulombVelThresh;
-            // frictionCompensation_thread = currentPid.frictionCompensation;
+        threadPid.setControlMode(testControlMode, usingJTC);
+
+        threadPid.Kp = currentPid.kp;
+        threadPid.Kd = currentPid.kd;
+        threadPid.Ki = currentPid.ki;
+        threadPid.Kff = currentPid.kff;
+        threadPid.max_int = currentPid.max_int;
+        threadPid.scale = currentPid.scale;
+        threadPid.max_output = currentPid.max_output;
+        threadPid.offset = currentPid.offset;
+        threadPid.stiction_up = currentPid.stiction_up_val;
+        threadPid.stiction_down = currentPid.stiction_down_val;
+        if (testControlMode == TORQUE_MODE) {
+            yarp::dev::MotorTorqueParameters trqParams;
+            iTrq[partIndex]->getMotorTorqueParams(jointIndex, &trqParams);
+            threadPid.bemf = trqParams.bemf;
+            if(usingJTC){
+                // TODO: implement getters here.
+                threadPid.coulombVelThresh = 0.0;
+                threadPid.frictionCompensation = 0.0;
+            }else{
+                threadPid.bemf_scale = trqParams.bemf_scale;
+                threadPid.Ktau = trqParams.ktau;
+                threadPid.Ktau_scale = trqParams.ktau_scale;
+            }
         }
     }
     else{log.error() << " Couldn't retrieve PID from part "<<partIndex << ", joint " << jointIndex;}
 
 }
-
-
-
-
-void CtrlThread::bottlePid(Bottle* bottle)
-{
-    bottle->addDouble(Kp_thread);
-    bottle->addDouble(Kd_thread);
-    bottle->addDouble(Ki_thread);
-    bottle->addDouble(Kff_thread);
-    bottle->addDouble(max_int_thread);
-    bottle->addDouble(scale_thread);
-    bottle->addDouble(max_output_thread);
-    bottle->addDouble(offset_thread);
-    bottle->addDouble(stiction_up_thread);
-    bottle->addDouble(stiction_down_thread);
-    if(usingJTC){
-
-        bottle->addDouble(bemf_thread);
-        bottle->addDouble(coulombVelThresh_thread);
-        bottle->addDouble(frictionCompensation_thread);
-    }
-}
-
-
-
 
 const std::string CtrlThread::currentDateTime()
 {
@@ -805,7 +734,7 @@ void CtrlThread::sendDataToGui()
         the receiver when to listen. 0 = stop listening and 1 = start. The size of the
         vector is inferred from the number of messages sent with a first value of 1.
     */
-    log.info() << " sending data";
+    log.info() << "Sending test data.";
 
     for (int i=0; i<iterationCounter; i++)
     {
@@ -818,11 +747,6 @@ void CtrlThread::sendDataToGui()
         dataBottle_out.addDouble(data_input[i]);
         dataBottle_out.addDouble(data_response[i]);
 
-        // dataBottle_out.addList().read(data_time);
-        // dataBottle_out.addList().read(data_input);
-        // dataBottle_out.addList().read(data_response);
-
-        log.info() << " writing data "<<i;
         dataPort_out.write(dataBottle_out);
     }
     Bottle dataBottle_out;
@@ -830,7 +754,7 @@ void CtrlThread::sendDataToGui()
     dataBottle_out.addInt(0);
     dataPort_out.write(dataBottle_out);
 
-    log.info() << " Data sent\n-----\n";
+    log.info() << "Sent" << iterationCounter << "data points.";
 }
 
 
@@ -877,7 +801,8 @@ bool CtrlThread::RpcPortCallback::read(ConnectionReader& connection)
 void CtrlThread::parseRpcMessage(Bottle *input, Bottle *reply)
 {
     int tag = input->get(0).asInt();
-
+    yarp::os::Bottle tmpBtl;
+    tmpBtl.copy(*input,1,-1);
     switch (tag) {
 
         case SET_CONTROL_MODE:
@@ -898,14 +823,19 @@ void CtrlThread::parseRpcMessage(Bottle *input, Bottle *reply)
             // Check if new gains have come in or if the user wants the current gains
             log.info() << "SET_PID_VALUES";
             resizeDataVectors();
-            parseIncomingPid(input);
-            bottlePid(reply);
+
+            threadPid.extractFromBottle(tmpBtl);
+            // parseIncomingPid(input);
+            parseIncomingPid();
+            // bottlePid(reply);
+            threadPid.putInBottle(*reply);
             break;
 
         case GET_PID_VALUES:
             log.info() << "GET_PID_VALUES";
             updatePidInformation();
-            bottlePid(reply);
+            // bottlePid(reply);
+            threadPid.putInBottle(*reply);
             break;
 
         case SET_PART_AND_JOINT_INDEXES:
@@ -943,45 +873,4 @@ void CtrlThread::parseRpcMessage(Bottle *input, Bottle *reply)
             break;
 
     }
-
-
-    // // Check if new gains have come in or if the user wants the current gains
-    // // Bottle *gainsMessage = gainsBufPort_in.read(false);
-    // if (gainsMessage!=NULL) {
-    //     log.info() << " Received gains message.";
-    //     resizeDataVectors();
-    //     parseIncomingPid(gainsMessage);
-    //     bottlePid();
-    // }
-    //
-    // // Check if the user wants to go to Home Pose
-    // // Bottle *goToHomeMessage = goToHomeBufPort_in.read(false);
-    // if (goToHomeMessage!=NULL) {
-    //     log.info() << " Received go to home message.";
-    //     if(goToHomeMessage->get(0).asInt()==1){
-    //         // setCommandToHome();
-    //         goToHome();
-    //     }
-    // }
-
-    // // Bottle *robotPartAndJointMessage = robotPartAndJointBufPort_in.read(false);
-    // if (robotPartAndJointMessage!=NULL) {
-    //     log.info() << " Received part and joint index message.";
-    //     partIndex = robotPartAndJointMessage->get(0).asInt();
-    //     jointIndex = robotPartAndJointMessage->get(1).asInt();
-    //     updatePidInformation();
-    // }
-    //
-    // // Bottle *controlModeMessage = controlModeBufPort_in.read(false);
-    // if (controlModeMessage!=NULL) {
-    //     log.info() << " Received control mode message.";
-    //     parseIncomingControlMode(controlModeMessage);
-    //     updatePidInformation();
-    // }
-    //
-    // // Bottle *signalPropertiesMessage = signalPropertiesBufPort_in.read(false);
-    // if (signalPropertiesMessage!=NULL) {
-    //     log.info() << " Received signal properties message.";
-    //     parseIncomingSignalProperties(signalPropertiesMessage);
-    // }
 }

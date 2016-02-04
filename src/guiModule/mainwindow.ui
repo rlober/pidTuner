@@ -619,7 +619,7 @@
                   </font>
                  </property>
                  <property name="text">
-                  <string>JTC</string>
+                  <string>Torque</string>
                  </property>
                  <property name="textFormat">
                   <enum>Qt::RichText</enum>
@@ -657,6 +657,19 @@
                    </property>
                   </spacer>
                  </item>
+                 <item>
+                  <widget class="QLabel" name="bemf_scale_label">
+                   <property name="text">
+                    <string>bemf_scale</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLineEdit" name="bemf_scale_in"/>
+                 </item>
                 </layout>
                </item>
                <item>
@@ -687,6 +700,19 @@
                    </property>
                   </spacer>
                  </item>
+                 <item>
+                  <widget class="QLabel" name="ktau_label">
+                   <property name="text">
+                    <string>Ktau</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLineEdit" name="ktau_in"/>
+                 </item>
                 </layout>
                </item>
                <item>
@@ -716,6 +742,19 @@
                     <enum>Qt::Horizontal</enum>
                    </property>
                   </widget>
+                 </item>
+                 <item>
+                  <widget class="QLabel" name="ktau_scale_label">
+                   <property name="text">
+                    <string>Ktau_scale</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QLineEdit" name="ktau_scale_in"/>
                  </item>
                 </layout>
                </item>

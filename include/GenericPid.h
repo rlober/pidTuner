@@ -54,7 +54,7 @@ public:
 
     void copyPidData(const GenericPid& source)
     {
-        Kp = source.Kp; Kd = source.Kd; Ki = source.Ki; Kff = source.Kff; max_int = source.max_int; scale = source.scale; max_output = source.max_output; offset = source.offset; stiction_up = source.stiction_up; stiction_down = source.stiction_down; bemf = source.bemf; coulombVelThresh = source.coulombVelThresh; frictionCompensation = source.frictionCompensation; bemf_scale = source.bemf_scale; ktau = source.ktau; ktau_scale = source.ktau_scale;
+        Kp = source.Kp; Kd = source.Kd; Ki = source.Ki; Kff = source.Kff; max_int = source.max_int; scale = source.scale; max_output = source.max_output; offset = source.offset; stiction_up = source.stiction_up; stiction_down = source.stiction_down; bemf = source.bemf; coulombVelThresh = source.coulombVelThresh; frictionCompensation = source.frictionCompensation; bemf_scale = source.bemf_scale; Ktau = source.Ktau; Ktau_scale = source.Ktau_scale;
 
         controlMode = source.controlMode;
         usingJTC = source.usingJTC;
@@ -62,7 +62,7 @@ public:
 
     void clearPidValues()
     {
-        Kp = Kd = Ki = Kff = max_int = scale = max_output = offset = stiction_up = stiction_down = bemf = coulombVelThresh = frictionCompensation = bemf_scale = ktau = ktau_scale = 0.0;
+        Kp = Kd = Ki = Kff = max_int = scale = max_output = offset = stiction_up = stiction_down = bemf = coulombVelThresh = frictionCompensation = bemf_scale = Ktau = Ktau_scale = 0.0;
     }
 
     void setControlMode(const ControlMode& newCtMode, bool isUsingJtc=false)
@@ -90,8 +90,8 @@ public:
                 bottle.addDouble(frictionCompensation);
             }else{
                 bottle.addDouble(bemf_scale);
-                bottle.addDouble(ktau);
-                bottle.addDouble(ktau_scale);
+                bottle.addDouble(Ktau);
+                bottle.addDouble(Ktau_scale);
             }
         }
     }
@@ -147,8 +147,8 @@ public:
                 frictionCompensation    = bottle.get(12).asDouble();
             }else{
                 bemf_scale  = bottle.get(11).asDouble();
-                ktau        = bottle.get(12).asDouble();
-                ktau_scale  = bottle.get(13).asDouble();
+                Ktau        = bottle.get(12).asDouble();
+                Ktau_scale  = bottle.get(13).asDouble();
             }
         }
         return true;
@@ -173,8 +173,8 @@ public:
         out << pid.coulombVelThresh << " ";
         out << pid.frictionCompensation << " ";
         out << pid.bemf_scale << " ";
-        out << pid.ktau << " ";
-        out << pid.ktau_scale;
+        out << pid.Ktau << " ";
+        out << pid.Ktau_scale;
         return out;
     }
 
@@ -193,8 +193,8 @@ public:
             coulombVelThresh,
             frictionCompensation,
             bemf_scale,
-            ktau,
-            ktau_scale;
+            Ktau,
+            Ktau_scale;
 
     ControlMode controlMode;
     bool        usingJTC;
