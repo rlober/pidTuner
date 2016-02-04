@@ -6,7 +6,7 @@
 #include <yarp/os/Log.h>
 #include <MessageVocabulary.h>
 #include <ostream>
-
+#include <sstream>
 
 #ifndef POSITION_MODE_BOTTLE_SIZE
 #define POSITION_MODE_BOTTLE_SIZE 10
@@ -159,23 +159,47 @@ public:
 
     friend std::ostream& operator<<(std::ostream &out, const GenericPid& pid)
     {
-        out << pid.Kp << " ";
-        out << pid.Kd << " ";
-        out << pid.Ki << " ";
-        out << pid.Kff << " ";
-        out << pid.max_int << " ";
-        out << pid.scale << " ";
-        out << pid.max_output << " ";
-        out << pid.offset << " ";
-        out << pid.stiction_up << " ";
-        out << pid.stiction_down << " ";
-        out << pid.bemf << " ";
-        out << pid.coulombVelThresh << " ";
-        out << pid.frictionCompensation << " ";
-        out << pid.bemf_scale << " ";
-        out << pid.Ktau << " ";
-        out << pid.Ktau_scale;
+        out << "Pid values:\n";
+        out << "Kp = " << pid.Kp << "\n";
+        out << "Kd = " << pid.Kd << "\n";
+        out << "Ki = " << pid.Ki << "\n";
+        out << "Kff = " << pid.Kff << "\n";
+        out << "max_int = " << pid.max_int << "\n";
+        out << "scale = " << pid.scale << "\n";
+        out << "max_output = " << pid.max_output << "\n";
+        out << "offset = " << pid.offset << "\n";
+        out << "stiction_up = " << pid.stiction_up << "\n";
+        out << "stiction_down = " << pid.stiction_down << "\n";
+        out << "bemf = " << pid.bemf << "\n";
+        out << "coulombVelThresh = " << pid.coulombVelThresh << "\n";
+        out << "frictionCompensation = " << pid.frictionCompensation << "\n";
+        out << "bemf_scale = " << pid.bemf_scale << "\n";
+        out << "Ktau = " << pid.Ktau << "\n";
+        out << "Ktau_scale = " << pid.Ktau_scale << "\n";
         return out;
+    }
+
+    std::string toString(std::string delimiter=" ")
+    {
+        std::stringstream pidStream;
+        pidStream   << Kp << delimiter
+                    << Kd << delimiter
+                    << Ki << delimiter
+                    << Kff << delimiter
+                    << max_int << delimiter
+                    << scale << delimiter
+                    << max_output << delimiter
+                    << offset << delimiter
+                    << stiction_up << delimiter
+                    << stiction_down << delimiter
+                    << bemf << delimiter
+                    << coulombVelThresh << delimiter
+                    << frictionCompensation << delimiter
+                    << bemf_scale << delimiter
+                    << Ktau << delimiter
+                    << Ktau_scale;
+
+        return pidStream.str();
     }
 
 
