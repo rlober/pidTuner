@@ -1,6 +1,9 @@
 #include <yarp/os/RFModule.h>
 #include "thread.h"
 #include <boost/scoped_ptr.hpp>
+#include <yarp/os/Log.h>
+#include <yarp/os/Network.h>
+#include <yarp/os/ResourceFinder.h>
 
 using namespace yarp::os;
 using namespace yarp::dev;

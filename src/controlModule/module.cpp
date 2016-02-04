@@ -1,6 +1,5 @@
 #include "controlModule/module.h"
-#include <yarp/os/Network.h>
-#include <yarp/os/ResourceFinder.h>
+
 
 
 using namespace yarp::os;
@@ -15,20 +14,20 @@ bool CtrlModule::configure(ResourceFinder &rf)
     if( rf.check("robot") )
     {
         robotName = rf.find("robot").asString().c_str();
-        std::cout << "\n\nRobot name is: " << robotName << "\n" << std::endl;
+        yarp::os::Log().info() << "Robot name is: " << robotName;
     }
 
     if( rf.check("exclude") )
     {
         excludedPart = rf.find("exclude").asString().c_str();
-        std::cout << "\n\nExcluding: " << excludedPart << "\n" << std::endl;
+        yarp::os::Log().info() << "Excluding: " << excludedPart;
     }
 
     bool isUsingJtc = false;
     if( rf.check("jtc") )
     {
         isUsingJtc = true;
-        std::cout << "\n\nUsing Joint Torque Control\n" << std::endl;
+        yarp::os::Log().info() << "Using Joint Torque Control";
     }
 
     int period = 10; //ms
@@ -76,9 +75,10 @@ int main(int argc, char *argv[])
 
     if (rf.check("help"))
     {
-        yarp::os::Log().error() << "Possible parameters \n";
-        yarp::os::Log().error()<< "\t--robot :Robot name. Set to icub by default.";
-        yarp::os::Log().error()<< "\t--exclude :A part you wish to exclude. Set to empty by default.";
+        yarp::os::Log().info() << "Possible parameters:";
+        yarp::os::Log().info()<< "\t--robot :Robot name. Set to icub by default.";
+        yarp::os::Log().info()<< "\t--exclude :A part you wish to exclude. Set to empty by default.";
+        yarp::os::Log().info()<< "\t--jtc :using joint torque control.";
         return 0;
     }
 

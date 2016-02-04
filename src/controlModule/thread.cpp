@@ -872,5 +872,11 @@ void CtrlThread::parseRpcMessage(Bottle *input, Bottle *reply)
             reply->addInt(1); // Change this to check check that the control mode was set.
             break;
 
+        case CHECK_IF_USING_JTC:
+            log.info() << "CHECK_IF_USING_JTC";
+            reply->clear();
+            reply->addInt(usingJTC); // Change this to check check that the control mode was set.
+            break;
+
     }
 }

@@ -129,6 +129,7 @@ private:
     double getValueFromUserInput(QLineEdit* userInputBox);
     void disableTorqueParamInputs();
     void enableTorqueParamInputs();
+    bool checkIfUsingJtc();
 
 
 

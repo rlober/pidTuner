@@ -11,7 +11,8 @@ enum MessageTag
     GET_PART_AND_JOINT_INDEXES  = 301,
     SET_SIGNAL_PROPERTIES       = 400,
     GET_SIGNAL_PROPERTIES       = 401,
-    GO_TO_HOME_POSTURE          = 500
+    GO_TO_HOME_POSTURE          = 500,
+    CHECK_IF_USING_JTC          = 600
 };
 
 enum ControlMode

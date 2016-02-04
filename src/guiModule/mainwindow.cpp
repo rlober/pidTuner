@@ -40,7 +40,6 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
     testControlMode(POSITION_MODE),
-    usingJTC(false),
     isOnlyMajorJoints(true),
     gainsHaveBeenChanged(false)
 {
@@ -63,6 +62,8 @@ MainWindow::MainWindow(QWidget *parent) :
     partsListVector.push_back("right_arm");
     partsListVector.push_back("left_leg");
     partsListVector.push_back("right_leg");
+
+
 
 }
 
@@ -541,6 +542,7 @@ void MainWindow::on_torContButton_clicked(bool checked)
         if (checked){
             testControlMode = TORQUE_MODE;
             controlMode_string = "torque";
+            usingJTC = checkIfUsingJtc();
             sendControlMode();
             yPlotLabel = "tau (Nm)";
             resetYLabel();
@@ -1162,4 +1164,13 @@ void MainWindow::on_savePlotButton_clicked()
     else{
         log.error() << "Failed to save file. Check filepath: \n" << qFilePath.toStdString();
     }
+}
+
+
+bool MainWindow::checkIfUsingJtc()
+{
+    Bottle send, reply;
+    send.addInt(CHECK_IF_USING_JTC);
+    rpcClientPort.write(send,reply);
+    return reply.get(0).asInt();
 }
