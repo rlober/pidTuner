@@ -51,10 +51,10 @@ CtrlThread::CtrlThread(const int period, const std::string Robot_Name, const std
 
         robotName="icub";
     }
-    // if(usingJTC)
-    // {
-    //     robotName += "/jtc";
-    // }
+    if(usingJTC)
+    {
+        robotName += "/jtc";
+    }
     baseFilePath = boost::filesystem::current_path().string();
     boost::filesystem::path full_path( baseFilePath );
     log.info() << " Current record path is : "<<baseFilePath;
