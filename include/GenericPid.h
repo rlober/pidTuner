@@ -7,6 +7,8 @@
 #include <MessageVocabulary.h>
 #include <ostream>
 #include <sstream>
+#include <yarp/dev/ITorqueControl.h>
+#include <yarp/dev/ControlBoardPid.h>
 
 #ifndef POSITION_MODE_BOTTLE_SIZE
 #define POSITION_MODE_BOTTLE_SIZE 10
@@ -25,7 +27,16 @@
 #endif
 
 
+class yarpJtcParameters
+{
+public:
+    yarpJtcParameters(): bemf(0.0), coulombVelThresh(0.0), frictionCompensation(0.0){}
 
+    double bemf;
+    double coulombVelThresh;
+    double frictionCompensation;
+
+};
 
 
 class GenericPid{
@@ -201,6 +212,37 @@ public:
 
         return pidStream.str();
     }
+
+    void parseToYarpParams(yarp::dev::Pid& yPid, yarp::dev::MotorTorqueParameters& yTrqParams, yarpJtcParameters& yJtcParms)
+    {
+        yPid.setKp(Kp);
+        yPid.setKd(Kd);
+        yPid.setKi(Ki);
+        yPid.setKff(Kff);
+        yPid.setMaxInt(max_int);
+        yPid.setScale(scale);
+        yPid.setMaxOut(max_output);
+        yPid.setOffset(offset);
+        yPid.setStictionValues(stiction_up, stiction_down);
+
+        if (controlMode == TORQUE_MODE) {
+            if(usingJTC){
+                yJtcParms.bemf = bemf;
+                yJtcParms.coulombVelThresh = coulombVelThresh;
+                yJtcParms.frictionCompensation = frictionCompensation;
+            }else{
+                yTrqParams.bemf = bemf;
+                yTrqParams.bemf_scale = bemf_scale;
+                yTrqParams.ktau = Ktau;
+                yTrqParams.ktau_scale = Ktau_scale;
+            }
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////
 
 
     double  Kp,

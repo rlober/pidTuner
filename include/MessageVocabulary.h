@@ -7,6 +7,7 @@ enum MessageTag
     GET_CONTROL_MODE            = 101,
     SET_PID_VALUES              = 200,
     GET_PID_VALUES              = 201,
+    SET_PID_VALUES_WITHOUT_TEST = 202,
     SET_PART_AND_JOINT_INDEXES  = 300,
     GET_PART_AND_JOINT_INDEXES  = 301,
     SET_SIGNAL_PROPERTIES       = 400,

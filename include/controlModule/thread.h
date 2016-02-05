@@ -177,7 +177,7 @@ class CtrlThread: public RateThread
 
         void bottlePid(Bottle* bottle);
         void bottleSignalProperties(Bottle* bottle);
-        void parseIncomingPid();
+        void parseNewPid();
         void parseIncomingControlMode(Bottle *newControlModeMessage);
         void parseIncomingSignalProperties(Bottle *newControlModeMessage);
         void updatePidInformation();
@@ -188,7 +188,7 @@ class CtrlThread: public RateThread
         void sendDataToGui();
         bool jointLimitsReached();
         void parseRpcMessage(Bottle *input, Bottle *reply);
-
+        void initializeTest();
 
         Port dataPort_out;
         RpcPortCallback rpcCallback;

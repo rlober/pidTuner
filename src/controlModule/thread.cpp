@@ -367,37 +367,14 @@ bool CtrlThread::sendJointCommand(double cmd)
 
 }
 
-void CtrlThread::parseIncomingPid()
+void CtrlThread::parseNewPid()
 {
 
-    Pid newPid;
+    yarp::dev::Pid newPid;
+    yarp::dev::MotorTorqueParameters trqParams;
+    yarpJtcParameters jtcParams;
 
-    newPid.setKp(threadPid.Kp);
-    newPid.setKd(threadPid.Kd);
-    newPid.setKi(threadPid.Ki);
-    newPid.setKff(threadPid.Kff);
-    newPid.setMaxInt(threadPid.max_int);
-    newPid.setScale(threadPid.scale);
-    newPid.setMaxOut(threadPid.max_output);
-    newPid.setOffset(threadPid.offset);
-    newPid.setStictionValues(threadPid.stiction_up, threadPid.stiction_down);
-
-    if (testControlMode == TORQUE_MODE) {
-        if(usingJTC){
-            iTrq[partIndex]->setBemfParam(jointIndex, threadPid.bemf);
-            // TODO: implement setters here.
-            threadPid.coulombVelThresh = 0.0;
-            threadPid.frictionCompensation = 0.0;
-        }else{
-            yarp::dev::MotorTorqueParameters trqParams;
-            trqParams.bemf = threadPid.bemf;
-            trqParams.bemf_scale = threadPid.bemf_scale;
-            trqParams.ktau = threadPid.Ktau;
-            trqParams.ktau_scale = threadPid.Ktau_scale;
-            iTrq[partIndex]->setMotorTorqueParams(jointIndex, trqParams);
-        }
-    }
-    //send new Pid to device
+    threadPid.parseToYarpParams(newPid, trqParams, jtcParams);
 
     if (iPids[partIndex]==NULL)
     {
@@ -426,6 +403,13 @@ void CtrlThread::parseIncomingPid()
                 break;
 
             case TORQUE_MODE:
+                if(usingJTC){
+                    iTrq[partIndex]->setBemfParam(jointIndex, jtcParams.bemf);
+                    // TODO: implement JTC param setters here.
+                }else{
+                    iTrq[partIndex]->setMotorTorqueParams(jointIndex, trqParams);
+                }
+
                 if (!iTrq[partIndex]->setTorquePid(jointIndex, newPid)) {
                     log.error()<<"Torque PID send failed...";
                 }
@@ -439,8 +423,7 @@ void CtrlThread::parseIncomingPid()
 
     }
     updatePidInformation();
-    triggerTime = Time::now();
-    applyExcitationSignal = true;
+
 
 }
 
@@ -823,18 +806,23 @@ void CtrlThread::parseRpcMessage(Bottle *input, Bottle *reply)
             // Check if new gains have come in or if the user wants the current gains
             log.info() << "SET_PID_VALUES";
             resizeDataVectors();
-
             threadPid.extractFromBottle(tmpBtl);
-            // parseIncomingPid(input);
-            parseIncomingPid();
-            // bottlePid(reply);
+            parseNewPid();
+            initializeTest();
+            threadPid.putInBottle(*reply);
+            break;
+            
+        case SET_PID_VALUES_WITHOUT_TEST:
+            // Check if new gains have come in or if the user wants the current gains
+            log.info() << "SET_PID_VALUES_WITHOUT_TEST";
+            threadPid.extractFromBottle(tmpBtl);
+            parseNewPid();
             threadPid.putInBottle(*reply);
             break;
 
         case GET_PID_VALUES:
             log.info() << "GET_PID_VALUES";
             updatePidInformation();
-            // bottlePid(reply);
             threadPid.putInBottle(*reply);
             break;
 
@@ -879,4 +867,10 @@ void CtrlThread::parseRpcMessage(Bottle *input, Bottle *reply)
             break;
 
     }
+}
+
+void CtrlThread::initializeTest()
+{
+    triggerTime = Time::now();
+    applyExcitationSignal = true;
 }

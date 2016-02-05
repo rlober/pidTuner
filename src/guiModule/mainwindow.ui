@@ -596,7 +596,7 @@
               </layout>
              </item>
              <item>
-              <layout class="QHBoxLayout" name="jtcLayout">
+              <layout class="QHBoxLayout" name="torqueLayout">
                <item>
                 <widget class="QLabel" name="torque_header">
                  <property name="sizePolicy">
@@ -778,6 +778,9 @@
              </property>
              <property name="text">
               <string>Test Gains</string>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
              </property>
             </widget>
            </item>

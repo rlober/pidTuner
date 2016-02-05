@@ -71,7 +71,7 @@ public:
 
 private slots:
     void createPlot();
-    void on_gainTestButton_clicked();
+    void on_gainTestButton_clicked(bool checked);
     void addPartsToList();
     void on_partList_currentIndexChanged(int partId);
     void on_jointList_currentIndexChanged(int jointId);
@@ -117,7 +117,7 @@ private:
     void saveGains();
     void refreshGainDisplays();
     bool getPidValues();
-    bool setPidValues();
+    bool setPidValues(bool testNewPid=true);
     void sendPartAndJointIndexes();
     void sendControlMode();
     void writeDataToLogs();

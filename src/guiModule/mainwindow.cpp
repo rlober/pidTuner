@@ -224,8 +224,10 @@ void MainWindow::addPartsToList()
     }
 }
 
-void MainWindow::on_gainTestButton_clicked()
+void MainWindow::on_gainTestButton_clicked(bool checked)
 {
+    // ui->gainTestButton->setStyleSheet("background: rgb(255, 0, 0)");
+    ui->gainTestButton->setChecked(true);
     setPidValues();
     /*  To get a vector using yarp ports we have to use a little workaround basically
         the data is saved in a yarp vector  then when we are ready to send each entry
@@ -284,6 +286,7 @@ void MainWindow::on_gainTestButton_clicked()
     ui->posPlot->replot();
 
     gainsHaveBeenChanged = true;
+    ui->gainTestButton->setChecked(false);
 
 }
 
@@ -715,6 +718,8 @@ bool MainWindow::discardChanges()
               break;
           case QMessageBox::Discard:
               gainsHaveBeenChanged=false;
+              newPid = originalPid;
+              setPidValues(false);
               return true;
               break;
           case QMessageBox::Cancel:
@@ -753,11 +758,12 @@ bool MainWindow::getPidValues()
 
 }
 
-bool MainWindow::setPidValues()
+bool MainWindow::setPidValues(bool testNewPid)
 {
     newPid.setControlMode(testControlMode, usingJTC);
     Bottle send, reply;
-    send.addInt(SET_PID_VALUES);
+    if (testNewPid) {send.addInt(SET_PID_VALUES);}
+    else {send.addInt(SET_PID_VALUES_WITHOUT_TEST);}
     newPid.putInBottle(send);
     rpcClientPort.write(send,reply);
     if(newPid.extractFromBottle(reply))
