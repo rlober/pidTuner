@@ -64,7 +64,6 @@ MainWindow::MainWindow(QWidget *parent) :
     partsListVector.push_back("right_leg");
 
 
-
 }
 
 MainWindow::~MainWindow()
@@ -85,6 +84,9 @@ bool MainWindow::init(ResourceFinder& rf)
 
     log.info() << "Setting up Qt Ui.";
     ui->setupUi(this);
+
+    // TODO: Debug velocity control and remove this line.
+    ui->velContButton->setEnabled(false);
 
     log.info() << "Setting signal properties to default values.";
     setSignalPropertiesToDefaults();
