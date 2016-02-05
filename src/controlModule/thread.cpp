@@ -51,10 +51,10 @@ CtrlThread::CtrlThread(const int period, const std::string Robot_Name, const std
 
         robotName="icub";
     }
-    if(usingJTC)
-    {
-        robotName += "/jtc";
-    }
+    // if(usingJTC)
+    // {
+    //     robotName += "/jtc";
+    // }
     baseFilePath = boost::filesystem::current_path().string();
     boost::filesystem::path full_path( baseFilePath );
     log.info() << " Current record path is : "<<baseFilePath;
@@ -811,7 +811,7 @@ void CtrlThread::parseRpcMessage(Bottle *input, Bottle *reply)
             initializeTest();
             threadPid.putInBottle(*reply);
             break;
-            
+
         case SET_PID_VALUES_WITHOUT_TEST:
             // Check if new gains have come in or if the user wants the current gains
             log.info() << "SET_PID_VALUES_WITHOUT_TEST";

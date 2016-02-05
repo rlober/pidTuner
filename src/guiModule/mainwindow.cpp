@@ -71,6 +71,11 @@ MainWindow::~MainWindow()
     //delete ui;
 }
 
+void MainWindow::frictionCompensationIntSlot(int value)
+{
+    double fricComp = (double)value/ (double)FRICTION_COMPENSATION_SLIDER_MAX;
+    ui->frictionCompensation_in->setText(QString::number(fricComp));
+}
 
 bool MainWindow::init(ResourceFinder& rf)
 {
@@ -85,9 +90,17 @@ bool MainWindow::init(ResourceFinder& rf)
     log.info() << "Setting up Qt Ui.";
     ui->setupUi(this);
 
+    // Set up slots and signals.
+    ui->frictionCompensation_slider->setRange(FRICTION_COMPENSATION_SLIDER_MIN,FRICTION_COMPENSATION_SLIDER_MAX);
+
+    QObject::connect(ui->frictionCompensation_slider, SIGNAL(valueChanged(int)),
+    this, SLOT(frictionCompensationIntSlot(int)) );
+
     // TODO: Debug velocity control and remove this line.
     ui->velContButton->setEnabled(false);
 
+
+    ////
     log.info() << "Setting signal properties to default values.";
     setSignalPropertiesToDefaults();
 
@@ -652,6 +665,21 @@ void MainWindow::on_bemf_in_editingFinished()
     newPid.bemf = getValueFromUserInput(ui->bemf_in);
 }
 
+void MainWindow::on_bemf_scale_in_editingFinished()
+{
+    newPid.bemf_scale = getValueFromUserInput(ui->bemf_scale_in);
+}
+
+void MainWindow::on_ktau_in_editingFinished()
+{
+    newPid.Ktau = getValueFromUserInput(ui->ktau_in);
+}
+
+void MainWindow::on_ktau_scale_in_editingFinished()
+{
+    newPid.Ktau_scale = getValueFromUserInput(ui->ktau_scale_in);
+}
+
 void MainWindow::on_coulombVelThresh_in_editingFinished()
 {
     newPid.coulombVelThresh = getValueFromUserInput(ui->coulombVelThresh_in);
@@ -660,6 +688,16 @@ void MainWindow::on_coulombVelThresh_in_editingFinished()
 void MainWindow::on_frictionCompensation_in_editingFinished()
 {
     newPid.frictionCompensation = getValueFromUserInput(ui->frictionCompensation_in);
+    int sliderPos = 0;
+    if (newPid.frictionCompensation >= 0.0 && newPid.frictionCompensation <=1.0) {
+        int sliderPos = (int)(newPid.frictionCompensation * (double)FRICTION_COMPENSATION_SLIDER_MAX ) ;
+    }else if(newPid.frictionCompensation > 1.0){
+        sliderPos = FRICTION_COMPENSATION_SLIDER_MAX;
+        newPid.frictionCompensation = 1.0;
+    }else{
+        newPid.frictionCompensation = 0.0;
+    }
+    ui->frictionCompensation_slider->setSliderPosition(sliderPos);
 }
 
 void MainWindow::on_saveGainsButton_clicked()

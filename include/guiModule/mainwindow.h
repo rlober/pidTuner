@@ -93,6 +93,9 @@ private slots:
     void on_stiction_up_in_editingFinished();
     void on_stiction_down_in_editingFinished();
     void on_bemf_in_editingFinished();
+    void on_bemf_scale_in_editingFinished();
+    void on_ktau_in_editingFinished();
+    void on_ktau_scale_in_editingFinished();
     void on_coulombVelThresh_in_editingFinished();
     void on_frictionCompensation_in_editingFinished();
 
@@ -104,6 +107,9 @@ private slots:
     void on_startTime_in_editingFinished();
     void on_resetSignalPropButton_clicked();
     void on_savePlotButton_clicked();
+
+
+    void frictionCompensationIntSlot(int value);
 
 private:
     boost::scoped_ptr<Ui::MainWindow> ui;
@@ -181,6 +187,10 @@ private:
     std::string logFilePath;
 
     GenericPid newPid, originalPid;
+
+    static const int FRICTION_COMPENSATION_SLIDER_MAX = 1000;
+    static const int FRICTION_COMPENSATION_SLIDER_MIN = 0;
+
 
 };
 
