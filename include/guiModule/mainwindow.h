@@ -98,6 +98,8 @@ private slots:
     void on_ktau_scale_in_editingFinished();
     void on_coulombVelThresh_in_editingFinished();
     void on_frictionCompensation_in_editingFinished();
+    // void on_frictionCompensation_in_textChanged(QString& newText);
+
 
     void on_saveGainsButton_clicked();
     void on_gainResetButton_clicked();
@@ -110,6 +112,8 @@ private slots:
 
 
     void frictionCompensationIntSlot(int value);
+    void frictionCompensationSliderTextSlot(QString newText);
+
 
 private:
     boost::scoped_ptr<Ui::MainWindow> ui;
