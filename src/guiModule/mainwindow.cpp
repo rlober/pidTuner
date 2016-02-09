@@ -69,6 +69,8 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     //delete ui;
+    dataPort_in.close();
+    rpcClientPort.close();
 }
 
 void MainWindow::frictionCompensationIntSlot(int value)

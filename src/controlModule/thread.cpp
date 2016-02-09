@@ -51,10 +51,6 @@ CtrlThread::CtrlThread(const int period, const std::string Robot_Name, const std
 
         robotName="icub";
     }
-    if(usingJTC)
-    {
-        robotName += "/jtc";
-    }
     baseFilePath = boost::filesystem::current_path().string();
     boost::filesystem::path full_path( baseFilePath );
     log.info() << " Current record path is : "<<baseFilePath;
@@ -202,7 +198,8 @@ void CtrlThread::threadRelease()
         // log.info() << " Going to Home Pose\n";
         Time::delay(0.1);
     }
-
+    dataPort_out.close();
+    rpcServerPort.close();
     for (int rp=0; rp<numRobotParts; rp++)
     {
         robotDevice[rp]->close();
@@ -222,7 +219,11 @@ bool CtrlThread::openInterfaces()
         Property options;
         options.put("device", "remote_controlboard");
         options.put("local", "/"+curRobPart+"/client");   //local port names
-        options.put("remote", "/"+robotName+"/"+curRobPart);         //where we connect to
+        if (usingJTC && curRobPart != "head") {
+            options.put("remote", "/"+robotName+"/jtc/"+curRobPart);         //where we connect to
+        }else{
+            options.put("remote", "/"+robotName+"/"+curRobPart);         //where we connect to
+        }
 
 
         PolyDriver *tmp_robotDevice = new PolyDriver(options);
