@@ -1,5 +1,7 @@
 #pidTuner
 
+[![Join the chat at https://gitter.im/rlober/pidTuner](https://badges.gitter.im/rlober/pidTuner.svg)](https://gitter.im/rlober/pidTuner?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 A graphical tool for tuning the PID control gains for each individual joint of the iCub in position, velocity and torque control.
 
 ![screen shot](./images/pidTunerScreenShot.png)
